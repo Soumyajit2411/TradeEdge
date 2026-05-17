@@ -18,6 +18,7 @@ services:
         value: https://api.india.delta.exchange
       - key: DELTA_LOOKBACK_DAYS
         value: "365"
+      # Comma-separated list: https://your-app.vercel.app,http://localhost:3000
       - key: CORS_ALLOW_ORIGIN
         sync: false
       - key: SUPABASE_URL
