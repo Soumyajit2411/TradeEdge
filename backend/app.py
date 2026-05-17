@@ -18,10 +18,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 config.validate()
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*":  {"origins": config.CORS_ORIGIN},
-    r"/health": {"origins": config.CORS_ORIGIN},
-})
+CORS(
+    app,
+    origins=config.CORS_ORIGINS,
+    allow_headers=["Authorization", "Content-Type"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    supports_credentials=False,
+)
 
 app.register_blueprint(delta_bp)
 app.register_blueprint(ai_bp)

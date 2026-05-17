@@ -12,7 +12,13 @@ DELTA_WS_URL     = os.getenv("DELTA_WEBSOCKET_URL", "wss://socket.india.delta.ex
 DELTA_LOOKBACK   = int(os.getenv("DELTA_LOOKBACK_DAYS", "365"))
 GEMINI_API_KEY   = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL     = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-CORS_ORIGIN      = os.getenv("CORS_ALLOW_ORIGIN", "*")
+# Accepts a single origin or a comma-separated list:
+#   CORS_ALLOW_ORIGIN=https://tradeedge.vercel.app,http://localhost:3000
+_cors_raw   = os.getenv("CORS_ALLOW_ORIGIN", "*")
+CORS_ORIGINS: list | str = (
+    [o.strip() for o in _cors_raw.split(",") if o.strip()]
+    if "," in _cors_raw else _cors_raw
+)
 PORT             = int(os.getenv("PORT", "5001"))
 
 # Email
@@ -35,7 +41,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 def validate() -> None:
     """Log warnings for missing or insecure configuration at startup."""
     _log = logging.getLogger(__name__)
-    if CORS_ORIGIN == "*":
+    if CORS_ORIGINS == "*":
         _log.warning("CORS_ALLOW_ORIGIN is '*' — set it to your frontend origin in production")
     for name, val in [
         ("SUPABASE_URL",              SUPABASE_URL),
