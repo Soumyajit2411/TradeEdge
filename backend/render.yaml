@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: tradeedge-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: DELTA_EXCHANGE_API_KEY
+        sync: false
+      - key: DELTA_EXCHANGE_API_SECRET
+        sync: false
+      - key: DELTA_EXCHANGE_BASE_URL
+        value: https://api.india.delta.exchange
+      - key: DELTA_LOOKBACK_DAYS
+        value: "365"
+      - key: CORS_ALLOW_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_TO
+        sync: false
+      - key: DAILY_EMAIL_TIME
+        value: "03:45"
