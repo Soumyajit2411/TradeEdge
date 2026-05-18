@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Union
 
 from dotenv import load_dotenv
 
@@ -15,7 +16,7 @@ GEMINI_MODEL     = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 # Accepts a single origin or a comma-separated list:
 #   CORS_ALLOW_ORIGIN=https://tradeedge.vercel.app,http://localhost:3000
 _cors_raw   = os.getenv("CORS_ALLOW_ORIGIN", "*")
-CORS_ORIGINS: list | str = (
+CORS_ORIGINS: Union[list, str] = (
     [o.strip() for o in _cors_raw.split(",") if o.strip()]
     if "," in _cors_raw else _cors_raw
 )
@@ -36,6 +37,9 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # Redis
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+# News
+NEWS_CACHE_TTL = int(os.getenv("NEWS_CACHE_TTL", "1800"))
 
 
 def validate() -> None:
