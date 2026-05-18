@@ -2,30 +2,35 @@
 
 import json
 import logging
+import time
 from typing import Any, Optional
 
 import config
 
 log = logging.getLogger(__name__)
 _client = None
-_unavailable = False
+_unavailable_until = 0.0
+_RETRY_AFTER_SECS = 30
 
 
 def _get():
-    global _client, _unavailable
-    if _unavailable:
-        return None
+    global _client, _unavailable_until
     if _client is not None:
         return _client
+    now = time.monotonic()
+    if now < _unavailable_until:
+        return None
     try:
         import redis
         r = redis.from_url(config.REDIS_URL, decode_responses=True, socket_connect_timeout=2)
         r.ping()
         _client = r
-        log.info("Redis connected at %s", config.REDIS_URL)
     except Exception as exc:
-        log.warning("Redis unavailable (%s) — caching disabled", exc)
-        _unavailable = True
+        _unavailable_until = now + _RETRY_AFTER_SECS
+        log.warning(
+            "Redis unavailable (%s) — caching paused for %ds",
+            exc, _RETRY_AFTER_SECS,
+        )
     return _client
 
 

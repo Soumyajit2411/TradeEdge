@@ -19,6 +19,7 @@ def _process_loss(trade: dict[str, Any], context: dict[str, Any], user_id: str) 
         analysis = ai_service.call_gemini_raw(
             ai_service.build_trade_loss_prompt(trade, context),
             max_tokens=800,
+            caller="trade_loss",
         )
         email_service.send_loss_alert(trade, analysis)
     except Exception as exc:

@@ -59,16 +59,18 @@ def _send_digest(date_key: str) -> None:
 
     def _row(r: dict) -> dict:
         return {
-            "symbol": r["symbol"],
-            "change": float(r.get("change_24h", 0)),
-            "price":  float(r.get("mark_price", 0)),
+            "symbol":       r["symbol"],
+            "change":       float(r.get("change_24h", 0)),
+            "price":        float(r.get("mark_price", 0)),
+            "turnover_usd": float(r.get("turnover_24h", 0)),
         }
 
     gainers = [_row(r) for r in sorted_by_change[:5]]
     losers  = [_row(r) for r in sorted_by_change[-5:][::-1]]
 
-    prompt   = build_daily_digest_prompt(gainers, losers, date_key)
-    analysis = call_gemini_raw(prompt)
+    fetched_at = datetime.now(timezone.utc).strftime("%H:%M")
+    prompt     = build_daily_digest_prompt(gainers, losers, date_key, fetched_at=fetched_at)
+    analysis   = call_gemini_raw(prompt, caller="daily_digest")
 
     date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     email_service.send_daily_digest(date_str, analysis, gainers, losers)

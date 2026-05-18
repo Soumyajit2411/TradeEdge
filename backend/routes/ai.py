@@ -47,6 +47,7 @@ def route_trade_replay() -> Response:
         output = ai_service.call_gemini_raw(
             ai_service.build_trade_replay_prompt(trade, context),
             max_tokens=900,
+            caller="trade_replay",
         )
         return Response(output, content_type="text/plain; charset=utf-8")
     except RuntimeError as exc:
