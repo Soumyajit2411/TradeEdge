@@ -6,8 +6,9 @@ import {
   Search, ChevronUp, ChevronDown, Minus, Activity,
 } from 'lucide-react'
 import { LiveTicker } from '@/types'
-import { backendUrl, fetchJson, friendlyApiError } from '@/lib/api'
+import { backendUrl, fetchJson } from '@/lib/api'
 import { Footer } from '@/components/layout/Footer'
+import { SYSTEM_MESSAGES } from '@/constants/system'
 
 const MARKET_POLL_INTERVAL_MS = 30_000
 
@@ -118,7 +119,7 @@ export default function LiveMarketsPage() {
         setUpdatedAt(new Date())
       } catch (e) {
         if (!alive) return
-        setError(friendlyApiError(e, 'Failed to load market data'))
+        setError(SYSTEM_MESSAGES.serversTemporarilyDown)
         setLoading(false)
       }
     }
