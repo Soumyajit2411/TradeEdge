@@ -240,12 +240,6 @@ export default function LiveMarketsPage() {
                 Updated {updatedAt.toLocaleTimeString()}
               </span>
             )}
-            <Link
-              href="/dashboard"
-              className="px-3 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 hover:bg-violet-600/30 transition-colors"
-            >
-              Dashboard
-            </Link>
           </div>
         </div>
       </header>
