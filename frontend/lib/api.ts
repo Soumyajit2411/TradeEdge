@@ -54,7 +54,13 @@ export async function fetchJson<T = unknown>(path: string, options: RequestInit 
 /** Fetch wrapper that attaches the current Supabase session token. */
 export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError?.code === 'refresh_token_not_found' || sessionError?.status === 400) {
+    await supabase.auth.signOut()
+    if (typeof window !== 'undefined') window.location.replace('/login')
+    throw new Error('Session expired. Please sign in again.')
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

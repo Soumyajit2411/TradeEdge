@@ -10,6 +10,14 @@ export function createClient(): SupabaseClientType {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
+
+    // Redirect to login whenever the session is fully gone (token revoked, expired, signed out).
+    _client.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && typeof window !== 'undefined') {
+        const isAuthPage = ['/login', '/signup', '/'].some(p => window.location.pathname === p)
+        if (!isAuthPage) window.location.replace('/login')
+      }
+    })
   }
   return _client
 }

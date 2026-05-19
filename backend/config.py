@@ -36,10 +36,13 @@ SUPABASE_ANON_KEY         = (os.getenv("SUPABASE_ANON_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # Redis
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL              = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_RETRY_AFTER_SECS = int(os.getenv("REDIS_RETRY_AFTER_SECS", "30"))
 
 # News
 NEWS_CACHE_TTL = int(os.getenv("NEWS_CACHE_TTL", "1800"))
+NEWS_CACHE_KEY = os.getenv("NEWS_CACHE_KEY", "gemini_market_news")
+NEWS_MAX_ITEMS = int(os.getenv("NEWS_MAX_ITEMS", "15"))
 
 
 def validate() -> None:

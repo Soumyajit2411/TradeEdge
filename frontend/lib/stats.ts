@@ -36,16 +36,6 @@ export function calcPnl(direction: 'long' | 'short', entry: number, exit: number
   return { pnl: parseFloat(raw.toFixed(2)), pnl_percent: parseFloat(pct.toFixed(2)) }
 }
 
-export function groupByDate(trades: Trade[]) {
-  const map: Record<string, number> = {}
-  trades.forEach(t => {
-    const date = t.entry_time.slice(0, 10)
-    map[date] = (map[date] || 0) + t.pnl
-  })
-  return Object.entries(map)
-    .map(([date, pnl]) => ({ date, pnl: parseFloat(pnl.toFixed(2)) }))
-    .sort((a, b) => a.date.localeCompare(b.date))
-}
 
 export function detectBiases(trades: Trade[]) {
   const biases: string[] = []

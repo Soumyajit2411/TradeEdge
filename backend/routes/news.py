@@ -19,8 +19,6 @@ from services.ai_service import call_gemini_with_search
 log = logging.getLogger(__name__)
 bp  = Blueprint("news", __name__)
 
-_NEWS_CACHE_KEY = "gemini_market_news"
-_MAX_ITEMS      = 15
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -213,7 +211,7 @@ def _validate_item(item: Any, valid_assets: set[str]) -> Optional[dict[str, Any]
 @bp.get("/api/news/tomorrow-impact")
 @require_auth
 def route_tomorrow_impact_news() -> Response:
-    cached = redis_cache.get(_NEWS_CACHE_KEY)
+    cached = redis_cache.get(config.NEWS_CACHE_KEY)
     if cached is not None:
         return jsonify(cached)
 
@@ -234,7 +232,7 @@ def route_tomorrow_impact_news() -> Response:
         if (v := _validate_item(item, valid_assets)) is not None
     ]
     items.sort(key=lambda x: x["impact_score"], reverse=True)
-    items = items[:_MAX_ITEMS]
+    items = items[:config.NEWS_MAX_ITEMS]
 
     result = {
         "as_of":      datetime.now(timezone.utc).isoformat(),
@@ -243,7 +241,7 @@ def route_tomorrow_impact_news() -> Response:
         "powered_by": "gemini",
     }
 
-    written = redis_cache.set(_NEWS_CACHE_KEY, result, ttl=config.NEWS_CACHE_TTL)
+    written = redis_cache.set(config.NEWS_CACHE_KEY, result, ttl=config.NEWS_CACHE_TTL)
     if not written:
-        log.warning("[news] failed to cache key=%s", _NEWS_CACHE_KEY)
+        log.warning("[news] failed to cache key=%s", config.NEWS_CACHE_KEY)
     return jsonify(result)

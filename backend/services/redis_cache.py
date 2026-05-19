@@ -10,7 +10,6 @@ import config
 log = logging.getLogger(__name__)
 _client = None
 _unavailable_until = 0.0
-_RETRY_AFTER_SECS = 30
 
 
 def _get():
@@ -26,10 +25,10 @@ def _get():
         r.ping()
         _client = r
     except Exception as exc:
-        _unavailable_until = now + _RETRY_AFTER_SECS
+        _unavailable_until = now + config.REDIS_RETRY_AFTER_SECS
         log.warning(
             "Redis unavailable (%s) — caching paused for %ds",
-            exc, _RETRY_AFTER_SECS,
+            exc, config.REDIS_RETRY_AFTER_SECS,
         )
     return _client
 
