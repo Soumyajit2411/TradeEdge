@@ -3,10 +3,10 @@
 from typing import Any
 
 from utils import signed, to_float
+from services.prompt_store import get_template
 
 
 def _hold_duration(entry_time: str, exit_time: str) -> str:
-    """Return a human-readable hold duration, or '?' if times are unavailable/identical."""
     try:
         from datetime import datetime, timezone
         et = datetime.fromisoformat(entry_time.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)
@@ -34,9 +34,10 @@ def build_trade_loss_prompt(trade: dict[str, Any], context: dict[str, Any]) -> s
     exit_time   = str(trade.get("exit_time", ""))
     hold_dur    = _hold_duration(entry_time, exit_time)
 
-    win_rate  = to_float(context.get("winRate"))
-    total_pnl = to_float(context.get("totalPnl"))
-    drawdown  = to_float(context.get("maxDrawdown"))
+    exit_block = (
+        f"- Exit:      {exit_price}\n- Hold Time: {hold_dur}\n"
+        if exit_price != "?" and exit_price != entry_price else ""
+    )
 
     recent_losses = context.get("recentSymbolLosses", [])
     loss_count    = len(recent_losses)
@@ -48,40 +49,18 @@ def build_trade_loss_prompt(trade: dict[str, Any], context: dict[str, Any]) -> s
         for l in recent_losses[:5]
     ) or "  No recent loss data"
 
-    exit_line = (
-        f"- Exit:      {exit_price}\n- Hold Time: {hold_dur}\n"
-        if exit_price != "?" and exit_price != entry_price else ""
-    )
+    ctx = {
+        "symbol":     symbol,
+        "direction":  direction,
+        "entry_price": entry_price,
+        "exit_block": exit_block,
+        "qty":        qty,
+        "pnl":        signed(pnl),
+        "win_rate":   f"{to_float(context.get('winRate')):.1f}",
+        "total_pnl":  signed(to_float(context.get("totalPnl"))),
+        "drawdown":   f"{to_float(context.get('maxDrawdown')):.2f}",
+        "loss_count": loss_count,
+        "loss_rows":  loss_rows,
+    }
 
-    return f"""You are a trading coach reviewing a losing trade for a Delta Exchange India futures trader.
-Only reference data explicitly shown below. Do not invent statistics or assume market conditions.
-
-## The Losing Trade
-- Symbol:    {symbol}
-- Direction: {direction}
-- Entry:     {entry_price}
-{exit_line}- Size:      {qty}
-- PnL:       {signed(pnl)} USDT
-
-## Trader Context
-- Overall Win Rate:  {win_rate:.1f}%
-- Total PnL:         {signed(total_pnl)} USDT
-- Max Drawdown:      {drawdown:.2f}%
-
-## Recent Losses on {symbol} ({loss_count} shown)
-{loss_rows}
-
----
-
-Write a tight 3-section analysis. Total response must be under 150 words. \
-Be direct and constructive — do not repeat the trade data back, analyze it.
-
-**What Went Wrong** — What does the entry price, size, and outcome suggest about the decision? \
-Was this likely a setup failure, sizing error, or poor timing?
-
-**Pattern Check** — Do the {loss_count} recent {symbol} losses above show a directional bias, \
-size escalation, or clustering at certain times? Name the pattern if one exists, or state clearly \
-that no pattern is visible.
-
-**Immediate Action** — One specific, concrete rule the trader should apply before their next \
-{symbol} trade. Make it measurable."""
+    return get_template("trade_loss").substitute(ctx)
