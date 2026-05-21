@@ -3,6 +3,7 @@
 from typing import Any
 
 from utils import signed, to_float
+from services.prompt_store import get_template
 
 
 def _fmt_symbol_rows(symbol_stats: list[dict[str, Any]]) -> str:
@@ -103,82 +104,43 @@ def build_prompt(payload: dict[str, Any]) -> str:
     wins     = round(win_rate / 100 * closed) if closed else 0
 
     best_hours, worst_hours = _fmt_hour_rows(hour_stats)
-
     has_biases = bool(bias_report.get("biases"))
+
     bias_section_instruction = (
-        "For each bias listed in the Psychological Biases section above: which coins are worst affected, "
-        "how many instances were detected, and what is the estimated P&L impact? "
+        "For each bias listed in the Psychological Biases section above: which coins are worst "
+        "affected, how many instances were detected, and what is the estimated P&L impact? "
         "Rank them by damage done."
         if has_biases else
-        "No biases were algorithmically detected in this period. Note this positively and comment on "
-        "what behavioural discipline the data suggests."
+        "No biases were algorithmically detected in this period. Note this positively and comment "
+        "on what behavioural discipline the data suggests."
     )
 
-    return f"""You are an expert crypto derivatives trading coach and performance analyst specialising in \
-Delta Exchange India perpetual futures. Analyze the trader's data below and deliver a precise, \
-data-driven coaching report.
+    ctx = {
+        "total_trades":             int(stats.get("totalTrades") or 0),
+        "closed_trades":            closed,
+        "total_pnl":                signed(to_float(stats.get("totalPnl"))),
+        "win_rate":                 f"{win_rate:.1f}",
+        "wins":                     wins,
+        "losses":                   closed - wins,
+        "profit_factor":            pf,
+        "avg_win":                  f"{to_float(stats.get('avgWin')):.4f}",
+        "avg_loss":                 f"{to_float(stats.get('avgLoss')):.4f}",
+        "win_loss_ratio":           f"{to_float(stats.get('avgWinLossRatio')):.2f}",
+        "max_drawdown":             f"{to_float(stats.get('maxDrawdown')):.2f}",
+        "sharpe_ratio":             f"{to_float(stats.get('sharpeRatio')):.2f}",
+        "total_commission":         f"{to_float(stats.get('totalCommission')):.4f}",
+        "best_day":                 f"{to_float(stats.get('bestDay')):.4f}",
+        "worst_day":                f"{to_float(stats.get('worstDay')):.4f}",
+        "streak_txt":               streak_txt,
+        "max_win_streak":           int(streak.get("maxWinStreak") or 0),
+        "max_loss_streak":          int(streak.get("maxLossStreak") or 0),
+        "symbol_rows":              _fmt_symbol_rows(symbol_stats),
+        "best_hours":               best_hours,
+        "worst_hours":              worst_hours,
+        "best_trades":              _fmt_trade_rows(trades, best=True),
+        "worst_trades":             _fmt_trade_rows(trades, best=False),
+        "bias_section":             _fmt_bias_section(bias_report),
+        "bias_section_instruction": bias_section_instruction,
+    }
 
-IMPORTANT: Only cite numbers explicitly present in the data below. Do not estimate, extrapolate, \
-or invent any statistic not shown.
-
-## Trading Summary
-- Total Fills: {int(stats.get('totalTrades') or 0)}
-- Closed Trades (realized PnL): {closed}
-- Total Realized PnL: {signed(to_float(stats.get('totalPnl')))} USDT
-- Win Rate: {win_rate:.1f}% ({wins}W / {closed - wins}L)
-- Profit Factor: {pf}
-- Avg Win: +{to_float(stats.get('avgWin')):.4f} USDT
-- Avg Loss: -{to_float(stats.get('avgLoss')):.4f} USDT
-- Win/Loss Ratio: {to_float(stats.get('avgWinLossRatio')):.2f}x
-- Max Drawdown: {to_float(stats.get('maxDrawdown')):.2f}%
-- Sharpe Ratio (annualized): {to_float(stats.get('sharpeRatio')):.2f}
-- Total Commission Paid: {to_float(stats.get('totalCommission')):.4f} USDT
-- Best Day: +{to_float(stats.get('bestDay')):.4f} USDT
-- Worst Day: {to_float(stats.get('worstDay')):.4f} USDT
-- Current Streak: {streak_txt}
-- Max Win Streak: {int(streak.get('maxWinStreak') or 0)}
-- Max Loss Streak: {int(streak.get('maxLossStreak') or 0)}
-
-## Per-Symbol Performance (sorted by PnL)
-{_fmt_symbol_rows(symbol_stats)}
-
-## Time Analysis (UTC hours)
-Best hours:  {best_hours}
-Worst hours: {worst_hours}
-
-## Top 5 Best Trades
-{_fmt_trade_rows(trades, best=True)}
-
-## Top 5 Worst Trades
-{_fmt_trade_rows(trades, best=False)}
-
-## Algorithmically Detected Psychological Biases
-{_fmt_bias_section(bias_report)}
-
----
-
-Write the following sections. Use specific numbers from the data. Be direct and actionable.
-
-## 1. Executive Summary (4–5 sentences)
-Overall verdict: is this a profitable, developing, or struggling trader? State the single most \
-damaging pattern and the psychological health score. Include realized PnL and win rate.
-
-## 2. Symbol Analysis (2–3 sentences per symbol)
-For each symbol with meaningful trade count: verdict (trade more / reduce size / stop trading it), \
-supported by its PnL, win rate, profit factor, and health score from the data above.
-
-## 3. Psychological Bias Breakdown
-{bias_section_instruction}
-
-## 4. Timing Edge (3–4 sentences)
-Which UTC hours show a clear positive edge from the data? Which to avoid? Give specific hour labels \
-and PnL figures from the Time Analysis section.
-
-## 5. Risk & Cost Analysis (4–5 sentences)
-Cover all of: drawdown profile vs win rate, win/loss ratio sustainability, commission as a percentage \
-of gross PnL, and whether current trading frequency is cost-effective.
-
-## 6. Specific Action Plan — Next 7 Days
-List exactly 5 concrete, measurable actions. Each must reference a specific symbol or bias from the \
-data (e.g., "Limit BTCUSDT to 3 trades per day — your {int(streak.get('maxLossStreak') or 0)}-trade \
-loss streak shows overtrading when losing")."""
+    return get_template("analysis").substitute(ctx)
