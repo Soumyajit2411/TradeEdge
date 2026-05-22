@@ -3,9 +3,9 @@ import { SYSTEM_MESSAGES } from '@/constants/system'
 
 const RAW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL?.trim()
 
-export const BACKEND_URL = (RAW_BACKEND_URL && RAW_BACKEND_URL.length > 0
-  ? RAW_BACKEND_URL
-  : 'http://localhost:5001').replace(/\/$/, '')
+export const BACKEND_URL = (
+  RAW_BACKEND_URL && RAW_BACKEND_URL.length > 0 ? RAW_BACKEND_URL : 'http://localhost:5001'
+).replace(/\/$/, '')
 
 export function backendUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
@@ -29,10 +29,10 @@ export function friendlyApiError(error: unknown, fallback: string): string {
 export async function parseJsonResponse<T = unknown>(res: Response): Promise<T> {
   const contentType = res.headers.get('content-type') ?? ''
   if (contentType.toLowerCase().includes('application/json')) {
-    return await res.json() as T
+    return (await res.json()) as T
   }
   const text = await res.text()
-  return ({ error: text } as unknown) as T
+  return { error: text } as unknown as T
 }
 
 export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
@@ -54,7 +54,10 @@ export async function fetchJson<T = unknown>(path: string, options: RequestInit 
 /** Fetch wrapper that attaches the current Supabase session token. */
 export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const supabase = createClient()
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession()
 
   if (sessionError?.code === 'refresh_token_not_found' || sessionError?.status === 400) {
     await supabase.auth.signOut()
@@ -77,7 +80,10 @@ export async function authFetch(path: string, options: RequestInit = {}): Promis
   }
 }
 
-export async function authFetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+export async function authFetchJson<T = unknown>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
   const res = await authFetch(path, options)
   const data = await parseJsonResponse<T | { error?: string }>(res)
   if (!res.ok) {

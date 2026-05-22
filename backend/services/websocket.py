@@ -21,6 +21,7 @@ _lock = threading.Lock()
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 def _signature() -> tuple[str, str]:
     ts = str(int(time.time()))
     sig = hmac.new(
@@ -47,20 +48,33 @@ def _extract_candidates(payload: Any) -> list[dict[str, Any]]:
 
 # ── WS runner ─────────────────────────────────────────────────────────────────
 
+
 def _run() -> None:
     def _subscribe(ws: websocket.WebSocketApp) -> None:
-        ws.send(json.dumps({
-            "type": "subscribe",
-            "payload": {"channels": [{"name": "v2/ticker", "symbols": ["all"]}]},
-        }))
+        ws.send(
+            json.dumps(
+                {
+                    "type": "subscribe",
+                    "payload": {"channels": [{"name": "v2/ticker", "symbols": ["all"]}]},
+                }
+            )
+        )
 
     def on_open(ws: websocket.WebSocketApp) -> None:
         if config.DELTA_API_KEY and config.DELTA_API_SECRET:
             ts, sig = _signature()
-            ws.send(json.dumps({
-                "type": "key-auth",
-                "payload": {"api-key": config.DELTA_API_KEY, "signature": sig, "timestamp": ts},
-            }))
+            ws.send(
+                json.dumps(
+                    {
+                        "type": "key-auth",
+                        "payload": {
+                            "api-key": config.DELTA_API_KEY,
+                            "signature": sig,
+                            "timestamp": ts,
+                        },
+                    }
+                )
+            )
         else:
             _subscribe(ws)
 
@@ -96,6 +110,7 @@ def _run() -> None:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def ensure_started() -> None:
     """Start the WS listener daemon thread exactly once (thread-safe)."""

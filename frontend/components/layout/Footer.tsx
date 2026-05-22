@@ -13,13 +13,17 @@ export function Footer() {
         </div>
 
         <p className="text-xs text-white/25 text-center">
-          &copy; {year} TradeEdge. All rights reserved.&nbsp;&nbsp;·&nbsp;&nbsp;
-          AI-powered trading journal for Delta Exchange India.
+          &copy; {year} TradeEdge. All rights reserved.&nbsp;&nbsp;·&nbsp;&nbsp; AI-powered trading
+          journal for Delta Exchange India.
         </p>
 
         <div className="flex items-center gap-4">
-          <a href="https://india.delta.exchange" target="_blank" rel="noopener noreferrer"
-            className="text-white/25 hover:text-white/50 transition-colors flex items-center gap-1 text-xs">
+          <a
+            href="https://india.delta.exchange"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/25 hover:text-white/50 transition-colors flex items-center gap-1 text-xs"
+          >
             <ExternalLink size={11} /> Delta Exchange
           </a>
         </div>

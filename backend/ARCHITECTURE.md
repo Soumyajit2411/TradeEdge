@@ -150,27 +150,6 @@ WebSocket thread  ──writes──▶  ticker_cache (in-memory)
 
 ---
 
-## Environment Variables
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `DELTA_EXCHANGE_BASE_URL` | Yes | Delta Exchange REST base |
-| `DELTA_EXCHANGE_API_KEY` | Fallback | Default credentials if user has none |
-| `DELTA_EXCHANGE_API_SECRET` | Fallback | Default credentials if user has none |
-| `GEMINI_API_KEY` | Yes | AI analysis |
-| `GEMINI_MODEL` | No | Defaults to `gemini-2.5-flash` |
-| `SUPABASE_URL` | Yes | Auth + DB |
-| `SUPABASE_ANON_KEY` | Yes | Token verification |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Bypass RLS for credentials table |
-| `REDIS_URL` | No | Caching (app works without it) |
-| `RESEND_API_KEY` | No | Email alerts |
-| `EMAIL_TO` | No | Destination for alerts/digest |
-| `DAILY_EMAIL_TIME` | No | Digest fire time, default `03:45` |
-| `CORS_ALLOW_ORIGIN` | No | Allowed origin, default `*` |
-| `PORT` | No | Server port, default `5001` |
-
----
-
 ## Logging Convention
 
 All logs are failure-only:

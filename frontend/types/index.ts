@@ -1,6 +1,13 @@
 export type TradeDirection = 'long' | 'short'
 export type TradeEmotion = 'confident' | 'fomo' | 'revenge' | 'uncertain' | 'patient' | 'greedy'
-export type TradeSetup = 'breakout' | 'pullback' | 'reversal' | 'momentum' | 'news' | 'scalp' | 'other'
+export type TradeSetup =
+  | 'breakout'
+  | 'pullback'
+  | 'reversal'
+  | 'momentum'
+  | 'news'
+  | 'scalp'
+  | 'other'
 
 export interface Trade {
   id: string

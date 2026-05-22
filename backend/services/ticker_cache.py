@@ -17,29 +17,25 @@ def normalize(item: dict[str, Any]) -> Optional[dict[str, Any]]:
     if not symbol:
         return None
 
-    mark  = to_float(item.get("mark_price"), to_float(item.get("close")))
-    spot  = to_float(item.get("spot_price"))
+    mark = to_float(item.get("mark_price"), to_float(item.get("close")))
+    spot = to_float(item.get("spot_price"))
     open_ = to_float(item.get("open"))
     close = to_float(item.get("close"), mark) or mark
 
-    change = (
-        ((close - open_) / open_) * 100
-        if open_ > 0
-        else to_float(item.get("change_24h"))
-    )
+    change = ((close - open_) / open_) * 100 if open_ > 0 else to_float(item.get("change_24h"))
 
     return {
-        "symbol":                  symbol,
-        "mark_price":              round(mark,  8),
-        "spot_price":              round(spot,  8),
-        "open":                    round(open_, 8),
-        "close":                   round(close, 8),
-        "change_24h":              round(change, 4),
-        "volume_24h":              to_float(item.get("volume_24h"),   to_float(item.get("volume"))),
-        "turnover_24h":            to_float(item.get("turnover_24h"), to_float(item.get("turnover"))),
-        "contract_type":           item.get("contract_type"),
+        "symbol": symbol,
+        "mark_price": round(mark, 8),
+        "spot_price": round(spot, 8),
+        "open": round(open_, 8),
+        "close": round(close, 8),
+        "change_24h": round(change, 4),
+        "volume_24h": to_float(item.get("volume_24h"), to_float(item.get("volume"))),
+        "turnover_24h": to_float(item.get("turnover_24h"), to_float(item.get("turnover"))),
+        "contract_type": item.get("contract_type"),
         "underlying_asset_symbol": item.get("underlying_asset_symbol"),
-        "quote_asset_symbol":      item.get("quote_asset_symbol") or item.get("quoting_asset_symbol"),
+        "quote_asset_symbol": item.get("quote_asset_symbol") or item.get("quoting_asset_symbol"),
     }
 
 

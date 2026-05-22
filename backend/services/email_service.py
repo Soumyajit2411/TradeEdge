@@ -10,13 +10,33 @@ import config
 
 log = logging.getLogger(__name__)
 
-# Dedup: never send two emails for the same fill ID in the same process lifetime.
+# In-memory fallback for when Redis is unavailable.
 _notified_ids: set[str] = set()
+
+_NOTIFIED_TTL = 86_400  # 24 h
 
 
 def is_notified(fill_id: str) -> bool:
-    """Return True if an email for this fill has already been sent this session."""
-    return bool(fill_id) and fill_id in _notified_ids
+    """Return True if an email for this fill has already been sent."""
+    if not fill_id:
+        return False
+    from services import redis_cache
+
+    r = redis_cache.client()
+    if r:
+        return bool(r.exists(f"notified:fill:{fill_id}"))
+    return fill_id in _notified_ids
+
+
+def _mark_notified(fill_id: str) -> None:
+    if not fill_id:
+        return
+    from services import redis_cache
+
+    r = redis_cache.client()
+    if r:
+        r.set(f"notified:fill:{fill_id}", "1", ex=_NOTIFIED_TTL)
+    _notified_ids.add(fill_id)
 
 
 def _init() -> bool:
@@ -62,15 +82,15 @@ _BASE_STYLE = """
 
 
 def _loss_html(trade: dict[str, Any], analysis: str) -> str:
-    symbol    = trade.get("symbol", "Unknown")
+    symbol = trade.get("symbol", "Unknown")
     direction = str(trade.get("direction", "")).upper()
-    pnl       = float(trade.get("pnl", 0))
-    price     = trade.get("entry_price", "—")
-    qty       = trade.get("quantity", "—")
-    ts        = str(trade.get("entry_time", ""))[:16].replace("T", " ")
+    pnl = float(trade.get("pnl", 0))
+    price = trade.get("entry_price", "—")
+    qty = trade.get("quantity", "—")
+    ts = str(trade.get("entry_time", ""))[:16].replace("T", " ")
 
-    pnl_cls   = "loss" if pnl < 0 else "profit"
-    pnl_str   = f"{pnl:+.4f} USDT"
+    pnl_cls = "loss" if pnl < 0 else "profit"
+    pnl_str = f"{pnl:+.4f} USDT"
 
     # Render analysis as paragraphs
     body_lines = "".join(
@@ -148,43 +168,49 @@ def _digest_html(date_str: str, analysis: str, gainers: list[dict], losers: list
 
 # ── Public send functions ──────────────────────────────────────────────────────
 
+
 def send_loss_alert(trade: dict[str, Any], analysis: str) -> None:
     """Send a loss trade analysis email. Silently deduplicates by fill ID."""
     if not _init():
         return
 
     fill_id = str(trade.get("id", ""))
-    if fill_id and fill_id in _notified_ids:
+    if is_notified(fill_id):
         return
-    if fill_id:
-        _notified_ids.add(fill_id)
+    _mark_notified(fill_id)
 
     symbol = trade.get("symbol", "Unknown")
-    pnl    = float(trade.get("pnl", 0))
+    pnl = float(trade.get("pnl", 0))
 
     try:
-        resend.Emails.send({
-            "from":    config.EMAIL_FROM,
-            "to":      [config.EMAIL_TO],
-            "subject": f"⚠️ Loss Trade — {symbol} → {pnl:+.4f} USDT",
-            "html":    _loss_html(trade, analysis),
-        })
+        resend.Emails.send(
+            {
+                "from": config.EMAIL_FROM,
+                "to": [config.EMAIL_TO],
+                "subject": f"⚠️ Loss Trade — {symbol} → {pnl:+.4f} USDT",
+                "html": _loss_html(trade, analysis),
+            }
+        )
         log.info("Loss alert sent for fill %s (%s %+.4f USDT)", fill_id, symbol, pnl)
     except Exception:
         log.exception("Failed to send loss alert")
 
 
-def send_daily_digest(date_str: str, analysis: str, gainers: list[dict], losers: list[dict]) -> None:
+def send_daily_digest(
+    date_str: str, analysis: str, gainers: list[dict], losers: list[dict]
+) -> None:
     """Send the morning market digest email."""
     if not _init():
         return
     try:
-        resend.Emails.send({
-            "from":    config.EMAIL_FROM,
-            "to":      [config.EMAIL_TO],
-            "subject": f"📈 Morning Market Digest — {date_str}",
-            "html":    _digest_html(date_str, analysis, gainers, losers),
-        })
+        resend.Emails.send(
+            {
+                "from": config.EMAIL_FROM,
+                "to": [config.EMAIL_TO],
+                "subject": f"📈 Morning Market Digest — {date_str}",
+                "html": _digest_html(date_str, analysis, gainers, losers),
+            }
+        )
         log.info("Daily digest sent for %s", date_str)
     except Exception:
         log.exception("Failed to send daily digest")

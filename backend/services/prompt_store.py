@@ -9,7 +9,7 @@ import config
 log = logging.getLogger(__name__)
 
 _CACHE_PREFIX = "prompt:"
-_CACHE_TTL    = 300  # 5 min — prompts change rarely
+_CACHE_TTL = 300  # 5 min — prompts change rarely
 
 
 def get_template(key: str) -> Template:
@@ -35,10 +35,10 @@ def _fetch(key: str, supabase_client) -> Optional[str]:
             f"{config.SUPABASE_URL}/rest/v1/ai_prompts",
             params={
                 "select": "template",
-                "key":       f"eq.{key}",
+                "key": f"eq.{key}",
                 "is_active": "eq.true",
-                "order":     "version.desc",
-                "limit":     "1",
+                "order": "version.desc",
+                "limit": "1",
             },
             headers=supabase_client._headers(service=True),
             timeout=5,

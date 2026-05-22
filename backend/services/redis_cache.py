@@ -21,6 +21,7 @@ def _get():
         return None
     try:
         import redis
+
         r = redis.from_url(config.REDIS_URL, decode_responses=True, socket_connect_timeout=2)
         r.ping()
         _client = r
@@ -28,7 +29,8 @@ def _get():
         _unavailable_until = now + config.REDIS_RETRY_AFTER_SECS
         log.warning(
             "Redis unavailable (%s) — caching paused for %ds",
-            exc, config.REDIS_RETRY_AFTER_SECS,
+            exc,
+            config.REDIS_RETRY_AFTER_SECS,
         )
     return _client
 
@@ -55,6 +57,11 @@ def set(key: str, value: Any, ttl: int = 30) -> bool:
     except Exception as exc:
         log.debug("redis set('%s') failed: %s", key, exc)
         return False
+
+
+def client():
+    """Return the raw Redis client, or None if unavailable."""
+    return _get()
 
 
 def delete(key: str) -> None:

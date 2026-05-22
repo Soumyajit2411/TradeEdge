@@ -9,14 +9,14 @@ import { SYSTEM_MESSAGES } from '@/constants/system'
 import { Footer } from '@/components/layout/Footer'
 
 export default function LoginPage() {
-  const router   = useRouter()
+  const router = useRouter()
   const supabase = createClient()
 
-  const [email,    setEmail]    = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [show,     setShow]     = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [show, setShow] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,8 +75,11 @@ export default function LoginPage() {
               <div>
                 <label className="block text-xs text-white/40 mb-1.5 font-medium">Email</label>
                 <input
-                  type="email" required autoComplete="email"
-                  value={email} onChange={e => setEmail(e.target.value)}
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
                   placeholder="you@example.com"
                 />
@@ -85,27 +88,45 @@ export default function LoginPage() {
                 <label className="block text-xs text-white/40 mb-1.5 font-medium">Password</label>
                 <div className="relative">
                   <input
-                    type={show ? 'text' : 'password'} required autoComplete="current-password"
-                    value={password} onChange={e => setPassword(e.target.value)}
+                    type={show ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
                     placeholder="••••••••"
                   />
-                  <button type="button" onClick={() => setShow(!show)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setShow(!show)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
+                  >
                     {show ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
-              <button type="submit" disabled={loading}
-                className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                {loading ? <><Loader2 size={15} className="animate-spin" /> Signing in…</> : 'Sign in'}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" /> Signing in…
+                  </>
+                ) : (
+                  'Sign in'
+                )}
               </button>
             </form>
           </div>
 
           <p className="text-center text-sm text-white/30 mt-5">
             Don&apos;t have an account?&nbsp;
-            <Link href="/signup" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+            <Link
+              href="/signup"
+              className="text-violet-400 hover:text-violet-300 font-medium transition-colors"
+            >
               Sign up
             </Link>
           </p>

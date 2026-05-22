@@ -28,13 +28,13 @@ interface NewsResponse {
 }
 
 function impactClass(score: number): string {
-  if (score >= IMPACT_THRESHOLDS.high)   return 'text-red-300 bg-red-500/10 border-red-500/30'
+  if (score >= IMPACT_THRESHOLDS.high) return 'text-red-300 bg-red-500/10 border-red-500/30'
   if (score >= IMPACT_THRESHOLDS.medium) return 'text-amber-300 bg-amber-500/10 border-amber-500/30'
   return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
 }
 
 function impactLabel(score: number): string {
-  if (score >= IMPACT_THRESHOLDS.high)   return 'High Impact'
+  if (score >= IMPACT_THRESHOLDS.high) return 'High Impact'
   if (score >= IMPACT_THRESHOLDS.medium) return 'Medium Impact'
   return 'Low Impact'
 }
@@ -43,13 +43,10 @@ function RelativeTime({ iso }: { iso: string | null }) {
   if (!iso) return null
   try {
     const diff = Date.now() - new Date(iso).getTime()
-    const mins  = Math.floor(diff / 60_000)
+    const mins = Math.floor(diff / 60_000)
     const hours = Math.floor(diff / 3_600_000)
-    const label = mins < 60
-      ? `${mins}m ago`
-      : hours < 24
-        ? `${hours}h ago`
-        : new Date(iso).toLocaleDateString()
+    const label =
+      mins < 60 ? `${mins}m ago` : hours < 24 ? `${hours}h ago` : new Date(iso).toLocaleDateString()
     return <span className="text-[11px] text-white/25">· {label}</span>
   } catch {
     return null
@@ -59,9 +56,7 @@ function RelativeTime({ iso }: { iso: string | null }) {
 function NewsCard({ item }: { item: NewsItem }) {
   const hasUrl = Boolean(item.url)
   const Wrapper = hasUrl ? 'a' : 'div'
-  const linkProps = hasUrl
-    ? { href: item.url, target: '_blank', rel: 'noopener noreferrer' }
-    : {}
+  const linkProps = hasUrl ? { href: item.url, target: '_blank', rel: 'noopener noreferrer' } : {}
 
   return (
     <Wrapper
@@ -74,15 +69,17 @@ function NewsCard({ item }: { item: NewsItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2 min-w-0">
           <h3 className="text-sm font-medium text-white/90 leading-relaxed">{item.title}</h3>
-          {hasUrl && (
-            <ExternalLink size={12} className="text-white/20 mt-1 shrink-0" />
-          )}
+          {hasUrl && <ExternalLink size={12} className="text-white/20 mt-1 shrink-0" />}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${impactClass(item.impact_score)}`}>
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${impactClass(item.impact_score)}`}
+          >
             {impactLabel(item.impact_score)}
           </span>
-          <span className={`text-[10px] tabular-nums ${impactClass(item.impact_score).split(' ')[0]}`}>
+          <span
+            className={`text-[10px] tabular-nums ${impactClass(item.impact_score).split(' ')[0]}`}
+          >
             {item.impact_score}/100
           </span>
         </div>
@@ -96,7 +93,7 @@ function NewsCard({ item }: { item: NewsItem }) {
       {/* Impacted coins */}
       {item.impacted_coins?.length > 0 && (
         <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-          {item.impacted_coins.map(coin => (
+          {item.impacted_coins.map((coin) => (
             <span
               key={coin.asset}
               className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 font-medium"
@@ -111,7 +108,7 @@ function NewsCard({ item }: { item: NewsItem }) {
       <div className="mt-3 flex items-center gap-2 flex-wrap">
         <span className="text-[11px] text-white/35">{item.source}</span>
         <RelativeTime iso={item.published_at} />
-        {item.market_tags.map(tag => (
+        {item.market_tags.map((tag) => (
           <span
             key={tag}
             className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/40 uppercase tracking-wide"
@@ -125,10 +122,10 @@ function NewsCard({ item }: { item: NewsItem }) {
 }
 
 export function MarketNews() {
-  const [items,   setItems]   = useState<NewsItem[]>([])
-  const [asOf,    setAsOf]    = useState<string | null>(null)
+  const [items, setItems] = useState<NewsItem[]>([])
+  const [asOf, setAsOf] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -144,7 +141,9 @@ export function MarketNews() {
         if (alive) setLoading(false)
       }
     })()
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [])
 
   const topItems = useMemo(() => items.slice(0, NEWS_LIMIT), [items])
@@ -203,7 +202,6 @@ export function MarketNews() {
           No market-moving news found right now.
         </div>
       )}
-
     </div>
   )
 }

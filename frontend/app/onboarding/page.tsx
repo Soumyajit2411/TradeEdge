@@ -2,8 +2,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  BarChart2, Key, Eye, EyeOff, Loader2, AlertCircle, CheckCircle,
-  ShieldCheck, ExternalLink, ChevronRight,
+  BarChart2,
+  Key,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  ShieldCheck,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react'
 import { authFetchJson } from '@/lib/api'
 import { getCredentialsStatus } from '@/lib/user-service'
@@ -18,18 +26,23 @@ const STEPS = [
 ]
 
 export default function OnboardingPage() {
-  const router      = useRouter()
+  const router = useRouter()
   const redirectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const [apiKey,    setApiKey]    = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [apiSecret, setApiSecret] = useState('')
-  const [showKey,   setShowKey]   = useState(false)
-  const [showSec,   setShowSec]   = useState(false)
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
-  const [success,   setSuccess]   = useState(false)
+  const [showKey, setShowKey] = useState(false)
+  const [showSec, setShowSec] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
-  useEffect(() => () => { if (redirectRef.current) clearTimeout(redirectRef.current) }, [])
+  useEffect(
+    () => () => {
+      if (redirectRef.current) clearTimeout(redirectRef.current)
+    },
+    []
+  )
 
   useEffect(() => {
     let alive = true
@@ -44,7 +57,9 @@ export default function OnboardingPage() {
         // Ignore status-check failures; user can still submit credentials.
       }
     })()
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,8 +115,9 @@ export default function OnboardingPage() {
             </div>
             <h1 className="text-2xl font-bold mb-2">Connect Delta Exchange India</h1>
             <p className="text-sm text-white/40 leading-relaxed max-w-xl">
-              Add a <strong className="text-white/70">read-only</strong> API key so TradeEdge can analyze your fills.
-              We can never place orders, access funds, or make withdrawals on your behalf.
+              Add a <strong className="text-white/70">read-only</strong> API key so TradeEdge can
+              analyze your fills. We can never place orders, access funds, or make withdrawals on
+              your behalf.
             </p>
           </div>
 
@@ -133,7 +149,8 @@ export default function OnboardingPage() {
 
               <div className="mt-4 bg-amber-500/5 border border-amber-500/15 rounded-xl p-3">
                 <p className="text-xs text-amber-400/80 leading-relaxed">
-                  <strong>Important:</strong> Only enable &quot;Read&quot; permission. Never enable Trading or Withdrawal.
+                  <strong>Important:</strong> Only enable &quot;Read&quot; permission. Never enable
+                  Trading or Withdrawal.
                 </p>
               </div>
             </div>
@@ -158,42 +175,65 @@ export default function OnboardingPage() {
                   <div className="relative">
                     <input
                       type={showKey ? 'text' : 'password'}
-                      required value={apiKey} onChange={e => setApiKey(e.target.value)}
+                      required
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
                       className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 pr-10 text-sm text-white font-mono placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
                       placeholder="Paste your API key"
                     />
-                    <button type="button" onClick={() => setShowKey(!showKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50">
+                    <button
+                      type="button"
+                      onClick={() => setShowKey(!showKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50"
+                    >
                       {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-white/40 mb-1.5 font-medium">API Secret</label>
+                  <label className="block text-xs text-white/40 mb-1.5 font-medium">
+                    API Secret
+                  </label>
                   <div className="relative">
                     <input
                       type={showSec ? 'text' : 'password'}
-                      required value={apiSecret} onChange={e => setApiSecret(e.target.value)}
+                      required
+                      value={apiSecret}
+                      onChange={(e) => setApiSecret(e.target.value)}
                       className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 pr-10 text-sm text-white font-mono placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
                       placeholder="Paste your API secret"
                     />
-                    <button type="button" onClick={() => setShowSec(!showSec)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50">
+                    <button
+                      type="button"
+                      onClick={() => setShowSec(!showSec)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50"
+                    >
                       {showSec ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
                 </div>
 
-                <button type="submit" disabled={loading}
-                  className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                  {loading
-                    ? <><Loader2 size={14} className="animate-spin" /> Verifying &amp; connecting…</>
-                    : <>Verify &amp; connect <ChevronRight size={14} /></>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Verifying &amp; connecting…
+                    </>
+                  ) : (
+                    <>
+                      Verify &amp; connect <ChevronRight size={14} />
+                    </>
+                  )}
                 </button>
               </form>
 
-              <button onClick={handleSkip}
-                className="w-full mt-3 text-xs text-white/25 hover:text-white/45 transition-colors py-2">
+              <button
+                onClick={handleSkip}
+                className="w-full mt-3 text-xs text-white/25 hover:text-white/45 transition-colors py-2"
+              >
                 Skip for now — I&apos;ll add this later
               </button>
             </div>

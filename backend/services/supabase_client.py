@@ -78,7 +78,10 @@ def save_user_credentials(user_id: str, api_key: str, api_secret: str) -> tuple[
     if not config.SUPABASE_URL:
         return False, "SUPABASE_URL is not set in backend .env"
     if not _service_key_valid():
-        return False, "SUPABASE_SERVICE_ROLE_KEY is missing or still set to the placeholder — add it from Supabase dashboard → Settings → API → service_role"
+        return (
+            False,
+            "SUPABASE_SERVICE_ROLE_KEY is missing or still set to the placeholder — add it from Supabase dashboard → Settings → API → service_role",
+        )
     try:
         h = _headers(service=True)
         h["Prefer"] = "resolution=merge-duplicates,return=minimal"

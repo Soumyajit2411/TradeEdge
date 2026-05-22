@@ -5,8 +5,12 @@ import { LiveTicker, Trade } from '@/types'
 import { authFetch, authFetchJson, fetchJson, friendlyApiError, backendUrl } from '@/lib/api'
 import { createClient } from '@/lib/supabase'
 import {
-  calcExtendedStats, calcDrawdown, calcSymbolStats,
-  calcHourStats, calcDayStats, detectBiases,
+  calcExtendedStats,
+  calcDrawdown,
+  calcSymbolStats,
+  calcHourStats,
+  calcDayStats,
+  detectBiases,
 } from '@/lib/stats'
 import { analyzeAllBiases } from '@/lib/bias-analysis'
 import type { GlobalBiasReport } from '@/lib/bias-analysis'
@@ -30,24 +34,24 @@ import { Footer } from '@/components/layout/Footer'
 import { BarChart2, AlertCircle, LogOut, Settings, ChevronDown, User } from 'lucide-react'
 
 export default function Dashboard() {
-  const router   = useRouter()
+  const router = useRouter()
   const supabase = createClient()
 
-  const [trades,      setTrades]      = useState<Trade[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState<string | null>(null)
-  const [tab,         setTab]         = useState<DashboardTab>('overview')
+  const [trades, setTrades] = useState<Trade[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<DashboardTab>('overview')
   const [liveTickers, setLiveTickers] = useState<LiveTicker[]>([])
   const [liveLoading, setLiveLoading] = useState(false)
-  const [liveError,   setLiveError]   = useState<string | null>(null)
-  const [userEmail,    setUserEmail]    = useState<string | null>(null)
-  const [profileOpen,  setProfileOpen]  = useState(false)
+  const [liveError, setLiveError] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
   const [credentialsChecked, setCredentialsChecked] = useState(false)
   const [hasCredentials, setHasCredentials] = useState(false)
 
   const firstFillsLoadRef = useRef(true)
-  const knownFillIdsRef   = useRef<Set<string> | null>(null)
+  const knownFillIdsRef = useRef<Set<string> | null>(null)
 
   // Load user email for the header
   useEffect(() => {
@@ -82,7 +86,9 @@ export default function Dashboard() {
         if (alive) setCredentialsChecked(true)
       }
     })()
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [])
 
   const handleSignOut = async () => {
@@ -92,7 +98,7 @@ export default function Dashboard() {
 
   const notifyLoss = useCallback((trade: Trade, allTrades: Trade[]) => {
     const recentSymbolLosses = allTrades
-      .filter(t => t.symbol === trade.symbol && t.pnl < 0)
+      .filter((t) => t.symbol === trade.symbol && t.pnl < 0)
       .sort((a, b) => b.entry_time.localeCompare(a.entry_time))
       .slice(0, 5)
 
@@ -116,10 +122,10 @@ export default function Dashboard() {
       const data = await authFetchJson<Trade[]>('/api/delta/fills')
 
       if (knownFillIdsRef.current !== null) {
-        const newLosses = data.filter(t => t.pnl < 0 && !knownFillIdsRef.current!.has(t.id))
-        newLosses.forEach(t => notifyLoss(t, data))
+        const newLosses = data.filter((t) => t.pnl < 0 && !knownFillIdsRef.current!.has(t.id))
+        newLosses.forEach((t) => notifyLoss(t, data))
       }
-      knownFillIdsRef.current = new Set(data.map(t => t.id))
+      knownFillIdsRef.current = new Set(data.map((t) => t.id))
       setTrades(data)
     } catch (e) {
       setError(friendlyApiError(e, 'Failed to load fills'))
@@ -168,7 +174,9 @@ export default function Dashboard() {
           setLiveLoading(false)
           setLiveError(null)
         }
-      } catch { /* ignore malformed frames */ }
+      } catch {
+        /* ignore malformed frames */
+      }
     }
     stream.onerror = () => {
       setLiveError(DASHBOARD_MESSAGES.streamDisconnected)
@@ -176,13 +184,13 @@ export default function Dashboard() {
     return () => stream.close()
   }, [])
 
-  const stats        = useMemo(() => calcExtendedStats(trades), [trades])
+  const stats = useMemo(() => calcExtendedStats(trades), [trades])
   const drawdownData = useMemo(() => calcDrawdown(trades), [trades])
-  const symbolStats  = useMemo(() => calcSymbolStats(trades), [trades])
-  const hourStats    = useMemo(() => calcHourStats(trades), [trades])
-  const dayStats     = useMemo(() => calcDayStats(trades), [trades])
-  const biases       = useMemo(() => detectBiases(trades), [trades])
-  const biasReport   = useMemo<GlobalBiasReport>(() => analyzeAllBiases(trades), [trades])
+  const symbolStats = useMemo(() => calcSymbolStats(trades), [trades])
+  const hourStats = useMemo(() => calcHourStats(trades), [trades])
+  const dayStats = useMemo(() => calcDayStats(trades), [trades])
+  const biases = useMemo(() => detectBiases(trades), [trades])
+  const biasReport = useMemo<GlobalBiasReport>(() => analyzeAllBiases(trades), [trades])
 
   return (
     <div className="min-h-screen bg-[#080a0f] text-white flex flex-col">
@@ -197,13 +205,16 @@ export default function Dashboard() {
           </div>
 
           <nav className="flex items-center gap-1">
-            {DASHBOARD_TABS.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)}
+            {DASHBOARD_TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   tab === t.key
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
                     : 'text-white/40 hover:text-white/70'
-                }`}>
+                }`}
+              >
                 {t.label}
               </button>
             ))}
@@ -213,14 +224,17 @@ export default function Dashboard() {
             {/* Profile avatar + dropdown */}
             <div className="relative" ref={profileRef}>
               <button
-                onClick={() => setProfileOpen(o => !o)}
+                onClick={() => setProfileOpen((o) => !o)}
                 className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl hover:bg-white/[0.06] transition-colors group"
               >
                 {/* Avatar circle with initial */}
                 <div className="w-7 h-7 rounded-full bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-[11px] font-bold text-violet-300 uppercase select-none">
                   {userEmail ? userEmail[0] : <User size={12} />}
                 </div>
-                <ChevronDown size={12} className={`text-white/30 transition-transform group-hover:text-white/50 ${profileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  size={12}
+                  className={`text-white/30 transition-transform group-hover:text-white/50 ${profileOpen ? 'rotate-180' : ''}`}
+                />
               </button>
 
               {profileOpen && (
@@ -232,7 +246,9 @@ export default function Dashboard() {
                         {userEmail ? userEmail[0] : '?'}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-white/80 truncate">{userEmail ?? 'Trader'}</p>
+                        <p className="text-xs font-medium text-white/80 truncate">
+                          {userEmail ?? 'Trader'}
+                        </p>
                         <p className="text-[10px] text-white/30 mt-0.5">Delta Exchange India</p>
                       </div>
                     </div>
@@ -241,7 +257,10 @@ export default function Dashboard() {
                   {/* Menu items */}
                   <div className="py-1">
                     <button
-                      onClick={() => { setProfileOpen(false); router.push('/onboarding') }}
+                      onClick={() => {
+                        setProfileOpen(false)
+                        router.push('/onboarding')
+                      }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-white/55 hover:text-white hover:bg-white/[0.05] transition-colors text-left"
                     >
                       <Settings size={13} />
@@ -249,7 +268,10 @@ export default function Dashboard() {
                     </button>
                     <div className="border-t border-white/[0.06] my-1" />
                     <button
-                      onClick={() => { setProfileOpen(false); handleSignOut() }}
+                      onClick={() => {
+                        setProfileOpen(false)
+                        handleSignOut()
+                      }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400/70 hover:text-red-400 hover:bg-red-500/[0.06] transition-colors text-left"
                     >
                       <LogOut size={13} />
@@ -267,7 +289,9 @@ export default function Dashboard() {
         {credentialsChecked && !hasCredentials && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-amber-300 font-medium">{DASHBOARD_MESSAGES.onboardingIncompleteTitle}</p>
+              <p className="text-sm text-amber-300 font-medium">
+                {DASHBOARD_MESSAGES.onboardingIncompleteTitle}
+              </p>
               <p className="text-xs text-amber-300/70 mt-0.5">
                 {DASHBOARD_MESSAGES.onboardingIncompleteBody}
               </p>
@@ -285,7 +309,9 @@ export default function Dashboard() {
           <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
             <AlertCircle size={15} className="text-red-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm text-red-300 font-medium">{DASHBOARD_MESSAGES.deltaErrorTitle}</p>
+              <p className="text-sm text-red-300 font-medium">
+                {DASHBOARD_MESSAGES.deltaErrorTitle}
+              </p>
               <p className="text-xs text-red-300/70 mt-0.5">{error}</p>
             </div>
           </div>
@@ -308,8 +334,14 @@ export default function Dashboard() {
                 <EquityDrawdownChart data={drawdownData} />
                 <TimeAnalysis hourStats={hourStats} dayStats={dayStats} />
                 <div>
-                  <div className="text-xs text-white/25 uppercase tracking-widest font-medium mb-2">Recent fills</div>
-                  <TradeTable trades={[...trades].sort((a, b) => b.entry_time.localeCompare(a.entry_time)).slice(0, 50)} />
+                  <div className="text-xs text-white/25 uppercase tracking-widest font-medium mb-2">
+                    Recent fills
+                  </div>
+                  <TradeTable
+                    trades={[...trades]
+                      .sort((a, b) => b.entry_time.localeCompare(a.entry_time))
+                      .slice(0, 50)}
+                  />
                 </div>
               </div>
             )}
@@ -338,16 +370,10 @@ export default function Dashboard() {
             )}
 
             {tab === 'copilot' && (
-              <Copilot
-                trades={trades}
-                stats={stats}
-                symbolStats={symbolStats}
-              />
+              <Copilot trades={trades} stats={stats} symbolStats={symbolStats} />
             )}
 
-            {tab === 'news' && (
-              <MarketNews />
-            )}
+            {tab === 'news' && <MarketNews />}
           </>
         )}
       </main>
