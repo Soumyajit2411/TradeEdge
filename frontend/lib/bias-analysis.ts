@@ -1,6 +1,11 @@
 import { Trade } from '@/types'
 
-export type BiasType = 'revenge_trading' | 'fomo' | 'hesitation' | 'emotional_exit' | 'inconsistent_execution'
+export type BiasType =
+  | 'revenge_trading'
+  | 'fomo'
+  | 'hesitation'
+  | 'emotional_exit'
+  | 'inconsistent_execution'
 
 export interface BiasInstance {
   tradeId: string
@@ -36,27 +41,32 @@ export interface GlobalBiasReport {
 const BIAS_META: Record<BiasType, { label: string; description: string; color: string }> = {
   revenge_trading: {
     label: 'Revenge Trading',
-    description: 'Re-entering too quickly after a loss, often with larger size to recover losses immediately',
+    description:
+      'Re-entering too quickly after a loss, often with larger size to recover losses immediately',
     color: 'red',
   },
   fomo: {
     label: 'FOMO',
-    description: 'Rapid clusters of entries on the same coin suggesting excitement or fear of missing a move',
+    description:
+      'Rapid clusters of entries on the same coin suggesting excitement or fear of missing a move',
     color: 'orange',
   },
   hesitation: {
     label: 'Hesitation',
-    description: 'Winners closed far below your typical average win — cutting profits too early out of fear',
+    description:
+      'Winners closed far below your typical average win — cutting profits too early out of fear',
     color: 'yellow',
   },
   emotional_exit: {
     label: 'Emotional Exits',
-    description: 'Closed a losing position then immediately re-entered same direction at profit — premature exit',
+    description:
+      'Closed a losing position then immediately re-entered same direction at profit — premature exit',
     color: 'purple',
   },
   inconsistent_execution: {
     label: 'Inconsistent Execution',
-    description: 'Highly variable position sizes on the same instrument — no consistent risk framework',
+    description:
+      'Highly variable position sizes on the same instrument — no consistent risk framework',
     color: 'blue',
   },
 }
@@ -146,7 +156,7 @@ function detectFOMO(trades: Trade[]): BiasInstance[] {
 function detectHesitation(trades: Trade[]): BiasInstance[] {
   const instances: BiasInstance[] = []
   for (const [symbol, ts] of groupBySymbol(trades)) {
-    const wins = ts.filter(t => t.pnl > 0 && t.pnl_percent > 0)
+    const wins = ts.filter((t) => t.pnl > 0 && t.pnl_percent > 0)
     if (wins.length < 4) continue
     const avgWinPct = wins.reduce((s, t) => s + t.pnl_percent, 0) / wins.length
     const threshold = avgWinPct * 0.25
@@ -194,14 +204,14 @@ function detectInconsistentExecution(trades: Trade[]): BiasInstance[] {
   const instances: BiasInstance[] = []
   for (const [symbol, ts] of groupBySymbol(trades)) {
     if (ts.length < 5) continue
-    const quantities = ts.map(t => t.quantity)
+    const quantities = ts.map((t) => t.quantity)
     const mean = quantities.reduce((s, q) => s + q, 0) / quantities.length
     if (mean === 0) continue
     const variance = quantities.reduce((s, q) => s + Math.pow(q - mean, 2), 0) / quantities.length
     const cv = Math.sqrt(variance) / mean
     if (cv < 0.5) continue
     const outliers = ts
-      .filter(t => t.quantity > mean * 1.8 || t.quantity < mean * 0.4)
+      .filter((t) => t.quantity > mean * 1.8 || t.quantity < mean * 0.4)
       .slice(0, 4)
     for (const t of outliers) {
       const ratio = t.quantity / mean
@@ -233,7 +243,7 @@ function makeSummary(type: BiasType, instances: BiasInstance[]): BiasSummary {
 }
 
 export function analyzeAllBiases(trades: Trade[]): GlobalBiasReport {
-  const closed = trades.filter(t => t.pnl !== 0)
+  const closed = trades.filter((t) => t.pnl !== 0)
 
   const revenge = detectRevengeTrades(closed)
   const fomo = detectFOMO(trades)
@@ -251,26 +261,41 @@ export function analyzeAllBiases(trades: Trade[]): GlobalBiasReport {
 
   const overallHealthScore = Math.max(
     0,
-    Math.round(100 - biases.reduce((s, b) => s + b.score, 0) / biases.length),
+    Math.round(100 - biases.reduce((s, b) => s + b.score, 0) / biases.length)
   )
 
-  const symbols = [...new Set(trades.map(t => t.symbol))]
+  const symbols = [...new Set(trades.map((t) => t.symbol))]
   const symbolReports: SymbolBiasReport[] = symbols
-    .map(symbol => {
+    .map((symbol) => {
       const symbolBiases: BiasSummary[] = [
-        makeSummary('revenge_trading', revenge.filter(i => i.symbol === symbol)),
-        makeSummary('fomo', fomo.filter(i => i.symbol === symbol)),
-        makeSummary('hesitation', hesitation.filter(i => i.symbol === symbol)),
-        makeSummary('emotional_exit', emotional.filter(i => i.symbol === symbol)),
-        makeSummary('inconsistent_execution', inconsistent.filter(i => i.symbol === symbol)),
+        makeSummary(
+          'revenge_trading',
+          revenge.filter((i) => i.symbol === symbol)
+        ),
+        makeSummary(
+          'fomo',
+          fomo.filter((i) => i.symbol === symbol)
+        ),
+        makeSummary(
+          'hesitation',
+          hesitation.filter((i) => i.symbol === symbol)
+        ),
+        makeSummary(
+          'emotional_exit',
+          emotional.filter((i) => i.symbol === symbol)
+        ),
+        makeSummary(
+          'inconsistent_execution',
+          inconsistent.filter((i) => i.symbol === symbol)
+        ),
       ]
       const healthScore = Math.max(
         0,
-        Math.round(100 - symbolBiases.reduce((s, b) => s + b.score, 0) / symbolBiases.length),
+        Math.round(100 - symbolBiases.reduce((s, b) => s + b.score, 0) / symbolBiases.length)
       )
       return {
         symbol,
-        totalTrades: trades.filter(t => t.symbol === symbol).length,
+        totalTrades: trades.filter((t) => t.symbol === symbol).length,
         biases: symbolBiases,
         healthScore,
       }

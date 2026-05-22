@@ -29,8 +29,8 @@ def _process_loss(trade: dict[str, Any], context: dict[str, Any], user_id: str) 
 @bp.post("/api/notify/trade-loss")
 @require_auth
 def route_trade_loss() -> Response:
-    body    = request.get_json(silent=True) or {}
-    trade   = body.get("trade", {})
+    body = request.get_json(silent=True) or {}
+    trade = body.get("trade", {})
     context = body.get("context", {})
 
     try:
@@ -38,7 +38,9 @@ def route_trade_loss() -> Response:
     except (TypeError, ValueError):
         pnl = 0.0
     if not trade or pnl >= 0:
-        log.warning("[notify/trade-loss] user=%s — rejected non-loss payload (pnl=%.4f)", g.user_id, pnl)
+        log.warning(
+            "[notify/trade-loss] user=%s — rejected non-loss payload (pnl=%.4f)", g.user_id, pnl
+        )
         return jsonify({"ok": False, "error": "Not a losing trade"}), 400
 
     fill_id = str(trade.get("id", ""))

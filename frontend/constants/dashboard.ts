@@ -13,7 +13,8 @@ export const TICKER_POLL_INTERVAL_MS = 30_000
 
 export const DASHBOARD_MESSAGES = {
   onboardingIncompleteTitle: 'Onboarding incomplete',
-  onboardingIncompleteBody: 'Personal trading data stays empty until you connect your Delta Exchange read-only API key.',
+  onboardingIncompleteBody:
+    'Personal trading data stays empty until you connect your Delta Exchange read-only API key.',
   completeOnboardingCta: 'Complete onboarding',
   deltaErrorTitle: 'Delta Exchange error',
   loadingFills: 'Loading fills from Delta Exchange India…',

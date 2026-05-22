@@ -24,12 +24,14 @@ def credentials_status() -> Response:
 @bp.post("/api/users/credentials")
 @require_auth
 def save_credentials() -> Response:
-    body       = request.get_json(silent=True) or {}
-    api_key    = str(body.get("api_key", "")).strip()
+    body = request.get_json(silent=True) or {}
+    api_key = str(body.get("api_key", "")).strip()
     api_secret = str(body.get("api_secret", "")).strip()
 
     if not api_key or not api_secret:
-        log.warning("[users/credentials] user=%s — missing api_key or api_secret in request body", g.user_id)
+        log.warning(
+            "[users/credentials] user=%s — missing api_key or api_secret in request body", g.user_id
+        )
         return jsonify({"error": "api_key and api_secret are required"}), 400
 
     # Validate credentials against Delta Exchange.
@@ -47,12 +49,21 @@ def save_credentials() -> Response:
             msg = "Delta Exchange rejected these credentials. Check that they have read permission."
             if err:
                 msg = f"{msg} ({err})"
-            log.warning("[users/credentials] user=%s — Delta validation rejected: %s", g.user_id, err or "no detail")
+            log.warning(
+                "[users/credentials] user=%s — Delta validation rejected: %s",
+                g.user_id,
+                err or "no detail",
+            )
             return jsonify({"error": msg}), 400
 
     except Exception as exc:
         log.error("[users/credentials] user=%s — Delta validation exception: %s", g.user_id, exc)
-        return jsonify({"error": "Credential validation failed. Please check your API key and secret."}), 400
+        return (
+            jsonify(
+                {"error": "Credential validation failed. Please check your API key and secret."}
+            ),
+            400,
+        )
 
     ok, detail = supabase_client.save_user_credentials(g.user_id, api_key, api_secret)
     if not ok:
@@ -68,6 +79,8 @@ def save_credentials() -> Response:
 def delete_credentials() -> Response:
     ok = supabase_client.delete_user_credentials(g.user_id)
     if not ok:
-        log.warning("[users/credentials] user=%s — delete failed or Supabase not configured", g.user_id)
+        log.warning(
+            "[users/credentials] user=%s — delete failed or Supabase not configured", g.user_id
+        )
     redis_cache.delete(f"fills:{g.user_id}")
     return jsonify({"ok": True})

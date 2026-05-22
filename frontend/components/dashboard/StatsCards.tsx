@@ -1,10 +1,25 @@
 'use client'
 import { ExtendedDashboardStats } from '@/types'
 import { fmtSigned as fmt } from '@/lib/fmt'
-import { TrendingUp, TrendingDown, Target, Zap, Shield, Activity, DollarSign, Award } from 'lucide-react'
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Zap,
+  Shield,
+  Activity,
+  DollarSign,
+  Award,
+} from 'lucide-react'
 
 function StatCard({
-  label, value, sub, valueColor, icon: Icon, iconColor, danger,
+  label,
+  value,
+  sub,
+  valueColor,
+  icon: Icon,
+  iconColor,
+  danger,
 }: {
   label: string
   value: string
@@ -15,7 +30,9 @@ function StatCard({
   danger?: boolean
 }) {
   return (
-    <div className={`bg-[#0f1117] border rounded-xl p-4 ${danger ? 'border-red-500/20' : 'border-white/[0.07]'}`}>
+    <div
+      className={`bg-[#0f1117] border rounded-xl p-4 ${danger ? 'border-red-500/20' : 'border-white/[0.07]'}`}
+    >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-white/40 uppercase tracking-widest font-medium">{label}</span>
         <Icon size={14} className={iconColor} />
@@ -59,7 +76,13 @@ export function StatsCards({ stats }: { stats: ExtendedDashboardStats }) {
         label="Max Drawdown"
         value={`${stats.maxDrawdown.toFixed(1)}%`}
         sub={`Worst day ${stats.worstDay.toFixed(2)}`}
-        valueColor={stats.maxDrawdown < -10 ? 'text-red-400' : stats.maxDrawdown < -5 ? 'text-amber-400' : 'text-white/70'}
+        valueColor={
+          stats.maxDrawdown < -10
+            ? 'text-red-400'
+            : stats.maxDrawdown < -5
+              ? 'text-amber-400'
+              : 'text-white/70'
+        }
         icon={Shield}
         iconColor="text-amber-400"
         danger={stats.maxDrawdown < -10}
@@ -68,7 +91,13 @@ export function StatsCards({ stats }: { stats: ExtendedDashboardStats }) {
         label="Sharpe Ratio"
         value={stats.sharpeRatio.toFixed(2)}
         sub={`Best day +${stats.bestDay.toFixed(2)}`}
-        valueColor={stats.sharpeRatio > 1 ? 'text-emerald-400' : stats.sharpeRatio > 0 ? 'text-amber-400' : 'text-red-400'}
+        valueColor={
+          stats.sharpeRatio > 1
+            ? 'text-emerald-400'
+            : stats.sharpeRatio > 0
+              ? 'text-amber-400'
+              : 'text-red-400'
+        }
         icon={Activity}
         iconColor="text-sky-400"
       />
@@ -90,26 +119,40 @@ export function BiasAlert({ biases }: { biases: string[] }) {
     <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
         <Zap size={14} className="text-amber-400" />
-        <span className="text-xs text-amber-400 font-semibold uppercase tracking-widest">Pattern detected</span>
+        <span className="text-xs text-amber-400 font-semibold uppercase tracking-widest">
+          Pattern detected
+        </span>
       </div>
       <ul className="space-y-1">
         {biases.map((b, i) => (
-          <li key={i} className="text-sm text-amber-200/80">• {b}</li>
+          <li key={i} className="text-sm text-amber-200/80">
+            • {b}
+          </li>
         ))}
       </ul>
     </div>
   )
 }
 
-export function StreakBadge({ streak }: { stats: ExtendedDashboardStats; streak: ExtendedDashboardStats['streak'] }) {
+export function StreakBadge({
+  streak,
+}: {
+  stats: ExtendedDashboardStats
+  streak: ExtendedDashboardStats['streak']
+}) {
   if (streak.currentType === 'none') return null
   const isWin = streak.currentType === 'win'
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
-      isWin ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
-    }`}>
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+        isWin
+          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+          : 'bg-red-500/10 border-red-500/20 text-red-400'
+      }`}
+    >
       {isWin ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-      {streak.currentStreak} {isWin ? 'win' : 'loss'} streak · Max W{streak.maxWinStreak} / L{streak.maxLossStreak}
+      {streak.currentStreak} {isWin ? 'win' : 'loss'} streak · Max W{streak.maxWinStreak} / L
+      {streak.maxLossStreak}
     </div>
   )
 }
