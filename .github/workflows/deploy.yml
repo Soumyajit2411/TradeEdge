@@ -27,7 +27,7 @@ jobs:
       - name: Build and push image
         run: |
           docker build \
-            -f backend/Dockerfile.cloudrun \
+            -f backend/Dockerfile \
             -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/tradiary/api:${{ github.sha }} \
             backend/
           docker push \
@@ -57,9 +57,9 @@ jobs:
           EMAIL_TO=${{ secrets.EMAIL_TO }},\
           CORS_ALLOW_ORIGIN=${{ secrets.CORS_ALLOW_ORIGIN }}"
 
-  # ── 2. Deploy SSE stream + WebSocket + Cron → Oracle VPS ─────────────────
+  # ── 2. Deploy WebSocket + Realtime + Scheduler → Oracle VPS ──────────────
   deploy-oracle:
-    name: Oracle VPS (SSE + WebSocket + Cron)
+    name: Oracle VPS (WebSocket + Realtime + Scheduler)
     runs-on: ubuntu-latest
 
     steps:

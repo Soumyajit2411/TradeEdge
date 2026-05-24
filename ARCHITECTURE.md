@@ -161,7 +161,7 @@ All configuration is read from environment variables via `_env()` / `_env_first(
 | File | Target | Server |
 |---|---|---|
 | `Dockerfile` | Oracle VPS | `gunicorn app:app --worker-class uvicorn.workers.UvicornWorker --workers 1 --timeout 60` |
-| `Dockerfile.cloudrun` | Cloud Run | `gunicorn cloudrun_app:app --worker-class uvicorn.workers.UvicornWorker --workers 2 --timeout 120` |
+| `Dockerfile.oracle` | Cloud Run | `gunicorn cloudrun_app:app --worker-class uvicorn.workers.UvicornWorker --workers 2 --timeout 120` |
 
 Both use `python:3.12-slim`. Cloud Run image exposes `${PORT:-8080}`.
 
@@ -292,7 +292,7 @@ Triggered on push to `master`. Two parallel jobs:
 
 **`deploy-cloudrun`**
 1. Authenticate to GCP via service account key.
-2. Build `backend/Dockerfile.cloudrun` → push to Artifact Registry.
+2. Build `backend/Dockerfile.oracle` → push to Artifact Registry.
 3. `gcloud run deploy tradiary-api` with env vars injected from GitHub secrets.
 
 **`deploy-oracle`**
