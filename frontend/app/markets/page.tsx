@@ -14,11 +14,10 @@ import {
   Activity,
 } from 'lucide-react'
 import { LiveTicker } from '@/types'
-import { backendUrl, fetchJson } from '@/lib/api'
+import { fetchJson } from '@/lib/api'
+import { createClient } from '@/lib/supabase'
 import { Footer } from '@/components/layout/Footer'
 import { SYSTEM_MESSAGES } from '@/constants/system'
-
-const MARKET_POLL_INTERVAL_MS = 30_000
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -142,7 +141,7 @@ export default function LiveMarketsPage() {
         setLoading(false)
         setError(null)
         setUpdatedAt(new Date())
-      } catch (e) {
+      } catch {
         if (!alive) return
         setError(SYSTEM_MESSAGES.serversTemporarilyDown)
         setLoading(false)
@@ -150,32 +149,31 @@ export default function LiveMarketsPage() {
     }
 
     fetchSnapshot()
-    const id = window.setInterval(fetchSnapshot, MARKET_POLL_INTERVAL_MS)
 
-    const stream = new EventSource(backendUrl('/api/delta/tickers/stream'))
-    stream.onopen = () => setStreaming(true)
-    stream.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as LiveTicker[]
-        if (!alive || !Array.isArray(data)) return
-        setRows(data)
+    const supabase = createClient()
+    const channel = supabase
+      .channel('tickers')
+      .on('broadcast', { event: 'ticker_update' }, (message: unknown) => {
+        if (!alive) return
+        const tickers =
+          (message as { payload?: { tickers?: LiveTicker[] } } | null)?.payload?.tickers ?? []
+        setRows(tickers)
         setLoading(false)
         setError(null)
         setStreaming(true)
         setUpdatedAt(new Date())
-      } catch {
-        /* ignore malformed frames */
-      }
-    }
-    stream.onerror = () => {
-      if (!alive) return
-      setStreaming(false)
-    }
+      })
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          setStreaming(true)
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setStreaming(false)
+        }
+      })
 
     return () => {
       alive = false
-      window.clearInterval(id)
-      stream.close()
+      channel.unsubscribe()
     }
   }, [])
 

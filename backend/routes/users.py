@@ -2,37 +2,40 @@
 
 import logging
 import time
+from typing import Any, Optional
 
-from flask import Blueprint, Response, g, jsonify, request
+from fastapi import APIRouter, Body, Depends, HTTPException
 
 import config
-from middleware.auth import require_auth
+from middleware.auth import UserContext, invalidate_creds, require_auth
 from services import redis_cache, supabase_client
 from delta_rest_client import DeltaRestClient
 
 log = logging.getLogger(__name__)
-bp = Blueprint("users", __name__)
+router = APIRouter()
 
 
-@bp.get("/api/users/credentials/status")
-@require_auth
-def credentials_status() -> Response:
-    creds = supabase_client.get_user_credentials(g.user_id)
-    return jsonify({"has_credentials": bool(creds)})
+@router.get("/api/users/credentials/status")
+def credentials_status(auth: UserContext = Depends(require_auth)):
+    creds = supabase_client.get_user_credentials(auth.user_id)
+    return {"has_credentials": bool(creds)}
 
 
-@bp.post("/api/users/credentials")
-@require_auth
-def save_credentials() -> Response:
-    body = request.get_json(silent=True) or {}
-    api_key = str(body.get("api_key", "")).strip()
-    api_secret = str(body.get("api_secret", "")).strip()
+@router.post("/api/users/credentials")
+def save_credentials(
+    auth: UserContext = Depends(require_auth),
+    body: Optional[dict[str, Any]] = Body(default=None),
+):
+    payload = body or {}
+    api_key = str(payload.get("api_key", "")).strip()
+    api_secret = str(payload.get("api_secret", "")).strip()
 
     if not api_key or not api_secret:
         log.warning(
-            "[users/credentials] user=%s — missing api_key or api_secret in request body", g.user_id
+            "[users/credentials] user=%s — missing api_key or api_secret in request body",
+            auth.user_id,
         )
-        return jsonify({"error": "api_key and api_secret are required"}), 400
+        raise HTTPException(status_code=400, detail="api_key and api_secret are required")
 
     # Validate credentials against Delta Exchange.
     try:
@@ -51,36 +54,41 @@ def save_credentials() -> Response:
                 msg = f"{msg} ({err})"
             log.warning(
                 "[users/credentials] user=%s — Delta validation rejected: %s",
-                g.user_id,
+                auth.user_id,
                 err or "no detail",
             )
-            return jsonify({"error": msg}), 400
+            raise HTTPException(status_code=400, detail=msg)
 
+    except HTTPException:
+        raise
     except Exception as exc:
-        log.error("[users/credentials] user=%s — Delta validation exception: %s", g.user_id, exc)
-        return (
-            jsonify(
-                {"error": "Credential validation failed. Please check your API key and secret."}
-            ),
-            400,
+        log.error(
+            "[users/credentials] user=%s — Delta validation exception: %s", auth.user_id, exc
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="Credential validation failed. Please check your API key and secret.",
         )
 
-    ok, detail = supabase_client.save_user_credentials(g.user_id, api_key, api_secret)
+    ok, detail = supabase_client.save_user_credentials(auth.user_id, api_key, api_secret)
     if not ok:
-        log.error("[users/credentials] user=%s — Supabase save failed: %s", g.user_id, detail)
-        return jsonify({"error": "Failed to save credentials. Please try again."}), 500
+        log.error(
+            "[users/credentials] user=%s — Supabase save failed: %s", auth.user_id, detail
+        )
+        raise HTTPException(status_code=500, detail="Failed to save credentials. Please try again.")
 
-    redis_cache.delete(f"fills:{g.user_id}")
-    return jsonify({"ok": True})
+    redis_cache.delete(f"fills:{auth.user_id}")
+    invalidate_creds(auth.user_id)
+    return {"ok": True}
 
 
-@bp.delete("/api/users/credentials")
-@require_auth
-def delete_credentials() -> Response:
-    ok = supabase_client.delete_user_credentials(g.user_id)
+@router.delete("/api/users/credentials")
+def delete_credentials(auth: UserContext = Depends(require_auth)):
+    ok = supabase_client.delete_user_credentials(auth.user_id)
     if not ok:
         log.warning(
-            "[users/credentials] user=%s — delete failed or Supabase not configured", g.user_id
+            "[users/credentials] user=%s — delete failed or Supabase not configured", auth.user_id
         )
-    redis_cache.delete(f"fills:{g.user_id}")
-    return jsonify({"ok": True})
+    redis_cache.delete(f"fills:{auth.user_id}")
+    invalidate_creds(auth.user_id)
+    return {"ok": True}

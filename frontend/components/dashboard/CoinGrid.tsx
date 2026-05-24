@@ -25,7 +25,7 @@ import {
   Radio,
 } from 'lucide-react'
 import { calcHourStats, calcDailyPnlMap } from '@/lib/stats'
-import { backendUrl } from '@/lib/api'
+import { lambdaUrl } from '@/lib/api'
 import { GlobalBiasReport, groupBySymbol } from '@/lib/bias-analysis'
 import { BIAS_COLORS, SEVERITY_LABEL } from '@/lib/bias-colors'
 
@@ -345,7 +345,7 @@ function LiveMarketPanel({ ticker, symbol }: { ticker: LiveTicker; symbol: strin
     let alive = true
     setCandleLoad(true)
     setCandleErr(null)
-    fetch(`${backendUrl(`/api/delta/candles/${symbol}`)}?resolution=${resolution}`)
+    fetch(`${lambdaUrl(`/api/delta/candles/${symbol}`)}?resolution=${resolution}`)
       .then((r) => r.json())
       .then((data) => {
         if (alive) {

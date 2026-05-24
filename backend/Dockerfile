@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 5001
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5001", "--worker-class", "gevent", "--workers", "1", "--timeout", "60", "--keep-alive", "5"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5001", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "1", "--timeout", "60", "--keep-alive", "5"]

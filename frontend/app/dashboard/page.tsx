@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { LiveTicker, Trade } from '@/types'
-import { authFetch, authFetchJson, fetchJson, friendlyApiError, backendUrl } from '@/lib/api'
+import { authFetch, authFetchJson, friendlyApiError } from '@/lib/api'
 import { createClient } from '@/lib/supabase'
 import {
   calcExtendedStats,
@@ -19,7 +19,6 @@ import {
   DASHBOARD_TABS,
   DashboardTab,
   FILL_POLL_INTERVAL_MS,
-  TICKER_POLL_INTERVAL_MS,
 } from '@/constants/dashboard'
 import { getCredentialsStatus } from '@/lib/user-service'
 import { StatsCards, BiasAlert, StreakBadge } from '@/components/dashboard/StatsCards'
@@ -145,43 +144,27 @@ export default function Dashboard() {
     return () => window.clearInterval(id)
   }, [fetchFills, credentialsChecked, hasCredentials])
 
-  const fetchLiveTickers = useCallback(async () => {
-    setLiveLoading(true)
-    setLiveError(null)
-    try {
-      const data = await fetchJson<LiveTicker[]>('/api/delta/tickers')
-      setLiveTickers(data)
-    } catch (e) {
-      setLiveError(friendlyApiError(e, 'Failed to load live prices'))
-    } finally {
-      setLiveLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    fetchLiveTickers()
-    const id = window.setInterval(fetchLiveTickers, TICKER_POLL_INTERVAL_MS)
-    return () => window.clearInterval(id)
-  }, [fetchLiveTickers])
-
-  useEffect(() => {
-    const stream = new EventSource(backendUrl('/api/delta/tickers/stream'))
-    stream.onmessage = (event) => {
-      try {
-        const rows = JSON.parse(event.data) as LiveTicker[]
-        if (Array.isArray(rows)) {
-          setLiveTickers(rows)
-          setLiveLoading(false)
+    const channel = supabase
+      .channel('tickers')
+      .on('broadcast', { event: 'ticker_update' }, (message: unknown) => {
+        const tickers =
+          (message as { payload?: { tickers?: LiveTicker[] } } | null)?.payload?.tickers ?? []
+        setLiveTickers(tickers)
+        setLiveLoading(false)
+        setLiveError(null)
+      })
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
           setLiveError(null)
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setLiveError(DASHBOARD_MESSAGES.streamDisconnected)
         }
-      } catch {
-        /* ignore malformed frames */
-      }
+      })
+    return () => {
+      channel.unsubscribe()
     }
-    stream.onerror = () => {
-      setLiveError(DASHBOARD_MESSAGES.streamDisconnected)
-    }
-    return () => stream.close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const stats = useMemo(() => calcExtendedStats(trades), [trades])

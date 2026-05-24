@@ -1,81 +1,73 @@
 """AI analysis routes — /api/ai/*"""
 
 import logging
+from typing import Any, Optional
 
-from flask import Blueprint, Response, g, request
+from fastapi import APIRouter, Body, Depends
+from fastapi.responses import PlainTextResponse
 
-from middleware.auth import require_auth
+from middleware.auth import UserContext, require_auth
 from middleware.rate_limit import check as rate_check
 from services import ai_service
 
 log = logging.getLogger(__name__)
-bp = Blueprint("ai", __name__)
+router = APIRouter()
 
 
-@bp.post("/api/ai/analyze")
-@require_auth
-def route_analyze() -> Response:
-    if not rate_check(g.user_id, max_calls=5, window_secs=60):
-        return Response(
+@router.post("/api/ai/analyze", response_class=PlainTextResponse)
+def route_analyze(
+    auth: UserContext = Depends(require_auth),
+    body: Optional[dict[str, Any]] = Body(default=None),
+):
+    if not rate_check(auth.user_id, max_calls=5, window_secs=60):
+        return PlainTextResponse(
             "Rate limit exceeded. Please wait before generating another report.",
-            status=429,
-            content_type="text/plain",
+            status_code=429,
         )
     try:
-        body = request.get_json(silent=True) or {}
-        output = ai_service.call_gemini(body)
-        return Response(output, content_type="text/plain; charset=utf-8")
+        output = ai_service.call_gemini(body or {})
+        return PlainTextResponse(output)
     except RuntimeError as exc:
         status = 503 if "not set" in str(exc) else 502
-        log.warning("[ai/analyze] user=%s — Gemini error (%s)", g.user_id, status)
-        return Response(
-            "AI service temporarily unavailable. Please try again.",
-            status=status,
-            content_type="text/plain",
+        log.warning("[ai/analyze] user=%s — Gemini error (%s)", auth.user_id, status)
+        return PlainTextResponse(
+            "AI service temporarily unavailable. Please try again.", status_code=status
         )
     except Exception as exc:
-        log.error("[ai/analyze] user=%s — unexpected error: %s", g.user_id, exc)
-        return Response(
-            "Unexpected error. Please try again.", status=500, content_type="text/plain"
-        )
+        log.error("[ai/analyze] user=%s — unexpected error: %s", auth.user_id, exc)
+        return PlainTextResponse("Unexpected error. Please try again.", status_code=500)
 
 
-@bp.post("/api/ai/trade-replay")
-@require_auth
-def route_trade_replay() -> Response:
-    if not rate_check(g.user_id, max_calls=10, window_secs=60):
-        return Response(
+@router.post("/api/ai/trade-replay", response_class=PlainTextResponse)
+def route_trade_replay(
+    auth: UserContext = Depends(require_auth),
+    body: Optional[dict[str, Any]] = Body(default=None),
+):
+    if not rate_check(auth.user_id, max_calls=10, window_secs=60):
+        return PlainTextResponse(
             "Rate limit exceeded. Please wait before replaying another trade.",
-            status=429,
-            content_type="text/plain",
+            status_code=429,
         )
     try:
-        body = request.get_json(silent=True) or {}
-        trade = body.get("trade") or {}
-        context = body.get("context") or {}
+        payload = body or {}
+        trade = payload.get("trade") or {}
+        context = payload.get("context") or {}
 
         if not isinstance(trade, dict) or not trade.get("id"):
-            log.warning("[ai/trade-replay] user=%s — missing trade payload", g.user_id)
-            return Response(
-                "Missing required 'trade' payload", status=400, content_type="text/plain"
-            )
+            log.warning("[ai/trade-replay] user=%s — missing trade payload", auth.user_id)
+            return PlainTextResponse("Missing required 'trade' payload", status_code=400)
 
         output = ai_service.call_gemini_raw(
             ai_service.build_trade_replay_prompt(trade, context),
             max_tokens=900,
-            caller="trade_replay",
         )
-        return Response(output, content_type="text/plain; charset=utf-8")
+        return PlainTextResponse(output)
     except RuntimeError as exc:
         status = 503 if "not set" in str(exc) else 502
-        log.warning("[ai/trade-replay] user=%s — Gemini error (%s)", g.user_id, status)
-        return Response(
-            "AI service temporarily unavailable. Please try again.",
-            status=status,
-            content_type="text/plain",
+        log.warning("[ai/trade-replay] user=%s — Gemini error (%s)", auth.user_id, status)
+        return PlainTextResponse(
+            "AI service temporarily unavailable. Please try again.", status_code=status
         )
     except Exception as exc:
-        log.error("[ai/trade-replay] user=%s — unexpected error: %s", g.user_id, exc)
-        return Response(
-            "Unexpected error. Please try again.", status=500, content_type="text/plain"
-        )
+        log.error("[ai/trade-replay] user=%s — unexpected error: %s", auth.user_id, exc)
+        return PlainTextResponse("Unexpected error. Please try again.", status_code=500)

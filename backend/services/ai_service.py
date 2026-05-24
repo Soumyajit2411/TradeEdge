@@ -16,25 +16,14 @@ from prompts import (
 
 log = logging.getLogger(__name__)
 
-__all__ = [
-    "build_prompt",
-    "build_trade_loss_prompt",
-    "build_trade_replay_prompt",
-    "build_daily_digest_prompt",
-    "build_market_news_prompt",
-    "call_gemini_raw",
-    "call_gemini_with_search",
-    "call_gemini",
-]
-
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 
-def _post(body: dict, *, caller: str, timeout: int) -> str:
-    """POST to Gemini, log tokens, and return the text response. Raises RuntimeError on failure."""
+def _post(body: dict, *, timeout: int) -> str:
+    """POST to Gemini and return the text response. Raises RuntimeError on failure."""
     if not config.GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
@@ -51,15 +40,6 @@ def _post(body: dict, *, caller: str, timeout: int) -> str:
         raise RuntimeError(f"Gemini returned non-JSON response: {res.text[:200]}")
 
     usage = payload.get("usageMetadata") or {}
-    log.info(
-        "gemini_tokens model=%s caller=%s prompt=%d output=%d total=%d",
-        config.GEMINI_MODEL,
-        caller,
-        usage.get("promptTokenCount", 0),
-        usage.get("candidatesTokenCount", 0),
-        usage.get("totalTokenCount", 0),
-    )
-
     candidates = payload.get("candidates") or []
     if not candidates:
         reason = (payload.get("promptFeedback") or {}).get("blockReason") or "unknown"
@@ -81,38 +61,25 @@ def _post(body: dict, *, caller: str, timeout: int) -> str:
 # ── Public callers ────────────────────────────────────────────────────────────
 
 
-def call_gemini_raw(prompt: str, max_tokens: int = 2000, *, caller: str = "") -> str:
+def call_gemini_raw(prompt: str, max_tokens: int = 2000) -> str:
     """Standard Gemini call. Raises RuntimeError on any failure."""
-    log.info(
-        "gemini_request model=%s prompt_chars=%d max_tokens=%d caller=%s",
-        config.GEMINI_MODEL,
-        len(prompt),
-        max_tokens,
-        caller or "unknown",
-    )
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_tokens},
     }
-    return _post(body, caller=caller or "unknown", timeout=120)
+    return _post(body, timeout=120)
 
 
-def call_gemini_with_search(prompt: str, max_tokens: int = 3000, *, caller: str = "search") -> str:
+def call_gemini_with_search(prompt: str, max_tokens: int = 3000) -> str:
     """Gemini call with Google Search grounding for real-time information."""
-    log.info(
-        "gemini_search_request model=%s prompt_chars=%d caller=%s",
-        config.GEMINI_MODEL,
-        len(prompt),
-        caller,
-    )
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
         "tools": [{"google_search": {}}],
         "generationConfig": {"temperature": 0.1, "maxOutputTokens": max_tokens},
     }
-    return _post(body, caller=caller, timeout=60)
+    return _post(body, timeout=60)
 
 
 def call_gemini(payload: dict[str, Any]) -> str:
     """Build the full analysis prompt and call Gemini."""
-    return call_gemini_raw(build_prompt(payload), max_tokens=3000, caller="analysis")
+    return call_gemini_raw(build_prompt(payload), max_tokens=3000)
