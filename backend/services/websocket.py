@@ -97,7 +97,7 @@ def _run() -> None:
         log.warning("Delta WS error: %s", err)
 
     def on_close(_ws: websocket.WebSocketApp, code: Any, msg: Any) -> None:
-        log.info("Delta WS closed: %s %s", code, msg)
+        pass
 
     ws = websocket.WebSocketApp(
         config.DELTA_WS_URL,
@@ -120,4 +120,3 @@ def ensure_started() -> None:
             return
         _started = True
     threading.Thread(target=_run, daemon=True, name="delta-ws").start()
-    log.info("Delta WebSocket listener started")

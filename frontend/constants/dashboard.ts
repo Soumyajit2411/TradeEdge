@@ -18,5 +18,5 @@ export const DASHBOARD_MESSAGES = {
   completeOnboardingCta: 'Complete onboarding',
   deltaErrorTitle: 'Delta Exchange error',
   loadingFills: 'Loading fills from Delta Exchange India…',
-  streamDisconnected: 'Realtime stream disconnected. Falling back to snapshot data.',
+  streamDisconnected: 'Realtime channel disconnected. Falling back to snapshot data.',
 } as const

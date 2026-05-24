@@ -43,7 +43,7 @@ def get(key: str) -> Optional[Any]:
         raw = r.get(key)
         return json.loads(raw) if raw is not None else None
     except Exception as exc:
-        log.debug("redis get('%s') failed: %s", key, exc)
+        log.warning("redis get('%s') failed: %s", key, exc)
         return None
 
 
@@ -55,7 +55,7 @@ def set(key: str, value: Any, ttl: int = 30) -> bool:
         r.setex(key, ttl, json.dumps(value, default=str))
         return True
     except Exception as exc:
-        log.debug("redis set('%s') failed: %s", key, exc)
+        log.warning("redis set('%s') failed: %s", key, exc)
         return False
 
 
@@ -71,4 +71,4 @@ def delete(key: str) -> None:
     try:
         r.delete(key)
     except Exception as exc:
-        log.debug("redis delete('%s') failed: %s", key, exc)
+        log.warning("redis delete('%s') failed: %s", key, exc)

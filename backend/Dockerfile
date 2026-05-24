@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 5001
+EXPOSE 8080
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5001", "--worker-class", "gevent", "--workers", "1", "--timeout", "60", "--keep-alive", "5"]
+CMD ["gunicorn", "cloudrun_app:app", "--bind", "0.0.0.0:8080", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--timeout", "120"]

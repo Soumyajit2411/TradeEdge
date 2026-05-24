@@ -100,6 +100,26 @@ def save_user_credentials(user_id: str, api_key: str, api_secret: str) -> tuple[
         return False, str(exc)
 
 
+def get_rows(table: str, params: dict) -> "list | None":
+    """SELECT rows from a Supabase table using the service role key."""
+    if not config.SUPABASE_URL or not _service_key_valid():
+        return None
+    try:
+        res = _session.get(
+            f"{config.SUPABASE_URL}/rest/v1/{table}",
+            params=params,
+            headers=_headers(service=True),
+            timeout=5,
+        )
+        if res.status_code == 200:
+            return res.json()
+        log.warning("get_rows %s HTTP %s: %s", table, res.status_code, res.text[:200])
+        return None
+    except Exception as exc:
+        log.warning("get_rows %s failed: %s", table, exc)
+        return None
+
+
 def delete_user_credentials(user_id: str) -> bool:
     """Remove Delta credentials for a user."""
     if not config.SUPABASE_URL or not _service_key_valid():

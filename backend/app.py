@@ -1,45 +1,44 @@
-"""Flask application factory and entry point."""
+"""Docker entry point — WebSocket daemon, email scheduler, Supabase Realtime broadcast.
+
+Not included here (lives in Cloud Run):
+  - All stateless REST APIs (fills, candles, tickers snapshot, AI, notify, users, news)
+"""
 
 import logging
-import os
-
-from flask import Flask, Response, jsonify
-from flask_cors import CORS
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 import config
-from routes.delta import bp as delta_bp
-from routes.ai import bp as ai_bp
-from routes.notify import bp as notify_bp
-from routes.users import bp as users_bp
-from routes.news import bp as news_bp
-from services import websocket, scheduler
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from services import scheduler, supabase_realtime, websocket
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.getLogger("realtime").setLevel(logging.WARNING)
 config.validate()
 
-app = Flask(__name__)
-CORS(
-    app,
-    origins=config.CORS_ORIGINS,
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    scheduler.start()
+    websocket.ensure_started()
+    supabase_realtime.start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+_origins = config.CORS_ORIGINS if isinstance(config.CORS_ORIGINS, list) else [config.CORS_ORIGINS]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins,
     allow_headers=["Authorization", "Content-Type"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    supports_credentials=False,
+    allow_methods=["GET", "OPTIONS"],
+    allow_credentials=False,
 )
-
-app.register_blueprint(delta_bp)
-app.register_blueprint(ai_bp)
-app.register_blueprint(notify_bp)
-app.register_blueprint(users_bp)
-app.register_blueprint(news_bp)
-
-scheduler.start()
 
 
 @app.get("/health")
-def health() -> Response:
-    websocket.ensure_started()
-    return jsonify({"ok": True})
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=config.PORT, debug=os.getenv("FLASK_DEBUG", "0") == "1")
+def health():
+    return {"ok": True}

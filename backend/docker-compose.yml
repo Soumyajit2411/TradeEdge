@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
 
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.oracle
     ports:
       - "5001:5001"
     env_file: .env

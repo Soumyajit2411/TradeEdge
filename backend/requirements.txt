@@ -1,11 +1,11 @@
-Flask==3.1.1
-flask-cors==6.0.1
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
 requests==2.32.3
+urllib3<2
 python-dotenv==1.1.1
 gunicorn==23.0.0
 delta-rest-client==1.0.14
 websocket-client==1.8.0
 resend==2.10.0
 redis==5.3.0
-gevent==24.11.1
-black==25.1.0
+supabase==2.15.2

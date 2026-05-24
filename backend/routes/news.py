@@ -8,16 +8,16 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from flask import Blueprint, Response, jsonify
+from fastapi import APIRouter, Depends, HTTPException
 
 import config
-from middleware.auth import require_auth
+from middleware.auth import UserContext, require_auth
 from prompts import build_market_news_prompt
 from services import redis_cache
 from services.ai_service import call_gemini_with_search
 
 log = logging.getLogger(__name__)
-bp = Blueprint("news", __name__)
+router = APIRouter()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -94,8 +94,7 @@ def _parse_news_json(text: str) -> list[dict[str, Any]]:
         lambda t: re.search(r"(\[[\s\S]*\])", t),
         # 4. Bare array — find the last ] to handle trailing text
         lambda t: re.search(r"(\[[\s\S]*\])[^\]]*$", t),
-        # 5. Array that starts with [ but has no closing ] at all (completely truncated
-        #    or corrupted mid-content — error_pos recovery handles the rest)
+        # 5. Array that starts with [ but has no closing ] at all
         lambda t: re.search(r"(\[[\s\S]+)", t),
     ]
 
@@ -109,9 +108,6 @@ def _parse_news_json(text: str) -> list[dict[str, Any]]:
             if isinstance(result, list):
                 return result
         except json.JSONDecodeError as e:
-            # Strategy A: truncate at the exact error position and close the structure.
-            # This handles the case where Gemini embeds a duplicate of the whole response
-            # inside a string value (unescaped quotes corrupt the JSON mid-field).
             error_prefix = candidate[: e.pos].rstrip()
             for suffix in ("}]", '"}]', '"]}]', "}]}]", '"]}]', "]"):
                 try:
@@ -121,7 +117,6 @@ def _parse_news_json(text: str) -> list[dict[str, Any]]:
                 except Exception:
                     pass
 
-            # Strategy B: close all unclosed braces/brackets (truncated output)
             for suffix in ("]", "}]", "}]}]", '"]}]'):
                 try:
                     repaired = candidate.rstrip().rstrip(",") + suffix
@@ -131,7 +126,6 @@ def _parse_news_json(text: str) -> list[dict[str, Any]]:
                 except Exception:
                     pass
 
-    # Strategy: trim to the last complete object boundary and close the array
     for match in re.finditer(r"(\[[\s\S]*)", text):
         candidate = match.group(1)
         last_obj_end = candidate.rfind("},")
@@ -146,7 +140,6 @@ def _parse_news_json(text: str) -> list[dict[str, Any]]:
             except Exception:
                 pass
 
-    # Last resort: collect all individual {...} objects from the text
     objects = []
     for m in re.finditer(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}", text):
         try:
@@ -181,7 +174,6 @@ def _validate_item(item: Any, valid_assets: set[str]) -> Optional[dict[str, Any]
     except (TypeError, ValueError):
         score = 20
 
-    # Only keep impacted_coins that are actually in the active coin list
     raw_coins = item.get("impacted_coins") or []
     impacted_coins = [
         c
@@ -211,12 +203,11 @@ def _validate_item(item: Any, valid_assets: set[str]) -> Optional[dict[str, Any]
 # ── Route ─────────────────────────────────────────────────────────────────────
 
 
-@bp.get("/api/news/tomorrow-impact")
-@require_auth
-def route_tomorrow_impact_news() -> Response:
+@router.get("/api/news/tomorrow-impact")
+def route_tomorrow_impact_news(_: UserContext = Depends(require_auth)):
     cached = redis_cache.get(config.NEWS_CACHE_KEY)
     if cached is not None:
-        return jsonify(cached)
+        return cached
 
     coins = _get_active_coins()
     date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -224,11 +215,14 @@ def route_tomorrow_impact_news() -> Response:
 
     try:
         prompt = build_market_news_prompt(coins, date_key)
-        raw_text = call_gemini_with_search(prompt, max_tokens=3000, caller="market_news")
+        raw_text = call_gemini_with_search(prompt, max_tokens=3000)
         raw_items = _parse_news_json(raw_text)
     except Exception as exc:
         log.error("[news] Gemini fetch failed: %s", exc)
-        return jsonify({"error": "Failed to fetch market news. Please try again shortly."}), 500
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch market news. Please try again shortly.",
+        )
 
     items = [v for item in raw_items if (v := _validate_item(item, valid_assets)) is not None]
     items.sort(key=lambda x: x["impact_score"], reverse=True)
@@ -244,4 +238,4 @@ def route_tomorrow_impact_news() -> Response:
     written = redis_cache.set(config.NEWS_CACHE_KEY, result, ttl=config.NEWS_CACHE_TTL)
     if not written:
         log.warning("[news] failed to cache key=%s", config.NEWS_CACHE_KEY)
-    return jsonify(result)
+    return result

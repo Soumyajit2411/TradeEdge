@@ -1,15 +1,16 @@
 import { createClient } from './supabase'
 import { SYSTEM_MESSAGES } from '@/constants/system'
 
-const RAW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL?.trim()
-
-export const BACKEND_URL = (
-  RAW_BACKEND_URL && RAW_BACKEND_URL.length > 0 ? RAW_BACKEND_URL : 'http://localhost:5001'
+// Cloud Run — all stateless REST APIs
+const RAW_CLOUDRUN_URL = process.env.NEXT_PUBLIC_CLOUDRUN_URL?.trim()
+export const CLOUDRUN_URL = (
+  RAW_CLOUDRUN_URL && RAW_CLOUDRUN_URL.length > 0 ? RAW_CLOUDRUN_URL : 'http://localhost:5001'
 ).replace(/\/$/, '')
 
-export function backendUrl(path: string): string {
+/** Builds a URL against Cloud Run (all stateless REST APIs). */
+export function lambdaUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
-  return `${BACKEND_URL}${normalized}`
+  return `${CLOUDRUN_URL}${normalized}`
 }
 
 export function friendlyApiError(error: unknown, fallback: string): string {
@@ -35,10 +36,11 @@ export async function parseJsonResponse<T = unknown>(res: Response): Promise<T> 
   return { error: text } as unknown as T
 }
 
+/** All REST API calls go to Cloud Run. */
 export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response
   try {
-    res = await fetch(backendUrl(path), options)
+    res = await fetch(lambdaUrl(path), options)
   } catch {
     throw new Error(SYSTEM_MESSAGES.serviceDown)
   }
@@ -51,7 +53,7 @@ export async function fetchJson<T = unknown>(path: string, options: RequestInit 
   return data as T
 }
 
-/** Fetch wrapper that attaches the current Supabase session token. */
+/** Fetch wrapper that attaches the current Supabase session token. Calls Cloud Run. */
 export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const supabase = createClient()
   const {
@@ -74,7 +76,7 @@ export async function authFetch(path: string, options: RequestInit = {}): Promis
   }
 
   try {
-    return await fetch(backendUrl(path), { ...options, headers })
+    return await fetch(lambdaUrl(path), { ...options, headers })
   } catch {
     throw new Error(SYSTEM_MESSAGES.serviceDown)
   }

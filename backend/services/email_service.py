@@ -191,7 +191,6 @@ def send_loss_alert(trade: dict[str, Any], analysis: str) -> None:
                 "html": _loss_html(trade, analysis),
             }
         )
-        log.info("Loss alert sent for fill %s (%s %+.4f USDT)", fill_id, symbol, pnl)
     except Exception:
         log.exception("Failed to send loss alert")
 
@@ -211,6 +210,5 @@ def send_daily_digest(
                 "html": _digest_html(date_str, analysis, gainers, losers),
             }
         )
-        log.info("Daily digest sent for %s", date_str)
     except Exception:
         log.exception("Failed to send daily digest")
